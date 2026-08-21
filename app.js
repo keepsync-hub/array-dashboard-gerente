@@ -1,68 +1,464 @@
-/* Tecnodata S.A. — Dashboard Gerencia General
-   Interacciones mínimas y render del gráfico de barras (SVG puro, sin dependencias). */
+/* ===========================================================
+   Tecnodata S.A. — Cockpit BSC 360° · Gerencia País
+   Render del tablero en una sola vista (SVG puro, sin dependencias).
+   Lee todo desde DATA (data.js). No define datos aquí.
+   =========================================================== */
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Año dinámico en el footer
-  const yearEl = document.getElementById('year');
-  if (yearEl) yearEl.textContent = new Date().getFullYear();
+const SVGNS = 'http://www.w3.org/2000/svg';
 
-  // Render del gráfico de barras
-  renderBars();
-});
+// Etiquetas cortas para las píldoras del mapa estratégico.
+const SHORT = {
+  ing_presu:'Presupuesto', ing_recur:'Ingreso recurrente', ebitda:'EBITDA', dso:'DSO',
+  nps:'NPS', renovacion:'Renovación', market_share:'Market share', clientes_nuevos:'Clientes nuevos',
+  sla:'SLA', uptime:'Uptime', ftf:'First-time-fix', resp_tecnico:'Resp. técnica',
+  otif:'OTIF', rot_inventario:'Inventario', leads:'Leads calif.', conversion:'Conversión',
+  productividad:'Prod. ventas', preventa_tiempo:'Preventa · Tiempo', preventa_plazo:'Preventa · Plazo',
+  preventa_poc:'Preventa · POC', certificacion:'Certificación', capacitacion:'Capacitación',
+  rotacion:'Rotación pers.', enps:'eNPS', adopcion:'Adopción CRM/FSM'
+};
+function shortName(id) { return SHORT[id] || (kpi(id) ? kpi(id).nombre : id); }
 
-function renderBars() {
-  const group = document.querySelector('.bars-group');
-  if (!group) return;
+// Estado de interacción del tablero.
+const STATE = { filtro: null, chain: null };
 
-  const values = (group.dataset.values || '').split(',').map(Number);
-  const labels = (group.dataset.labels || '').split(',');
+/* ============================ Utilidades DOM ============================ */
+function el(tag, attrs, children) {
+  const n = document.createElement(tag);
+  if (attrs) for (const k in attrs) {
+    if (k === 'class') n.className = attrs[k];
+    else if (k === 'html') n.innerHTML = attrs[k];
+    else if (k === 'text') n.textContent = attrs[k];
+    else if (k.startsWith('on') && typeof attrs[k] === 'function') n.addEventListener(k.slice(2), attrs[k]);
+    else n.setAttribute(k, attrs[k]);
+  }
+  (children || []).forEach(c => c && n.appendChild(c));
+  return n;
+}
+function svg(tag, attrs) {
+  const n = document.createElementNS(SVGNS, tag);
+  if (attrs) for (const k in attrs) n.setAttribute(k, attrs[k]);
+  return n;
+}
+function clear(node) { while (node && node.firstChild) node.removeChild(node.firstChild); }
 
-  const chartW = 640, chartH = 260;
-  const padLeft = 40, padRight = 20, padTop = 20, baseY = 220;
-  const usableW = chartW - padLeft - padRight;
-  const max = Math.max(...values) * 1.1;
-  const slot = usableW / values.length;
-  const barW = slot * 0.55;
-  const SVGNS = 'http://www.w3.org/2000/svg';
+function statusClass(s) { return s === 'ok' ? 'ok' : s === 'warn' ? 'warn' : s === 'bad' ? 'bad' : 'na'; }
+function makeDot(status) {
+  return el('span', { class: 'dot dot-' + statusClass(status), title: labelEstado(status) });
+}
+function labelEstado(s) { return s === 'ok' ? 'En meta' : s === 'warn' ? 'En riesgo' : s === 'bad' ? 'Crítico' : 'Sin dato'; }
 
-  values.forEach((v, i) => {
-    const h = ((baseY - padTop) * v) / max;
-    const x = padLeft + slot * i + (slot - barW) / 2;
-    const y = baseY - h;
+/* ============================ Sparkline ============================ */
+function renderSparkline(container, values, status) {
+  const W = 120, H = 32, pad = 3;
+  const s = svg('svg', { class: 'spark', viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'none' });
+  const min = Math.min(...values), max = Math.max(...values);
+  const span = (max - min) || 1;
+  const stepX = (W - pad * 2) / (values.length - 1);
+  const pts = values.map((v, i) => {
+    const x = pad + i * stepX;
+    const y = H - pad - ((v - min) / span) * (H - pad * 2);
+    return [x, y];
+  });
+  const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  const path = svg('path', { d, class: 'spark-line spark-' + statusClass(status), fill: 'none' });
+  s.appendChild(path);
+  const last = pts[pts.length - 1];
+  s.appendChild(svg('circle', { cx: last[0].toFixed(1), cy: last[1].toFixed(1), r: 2.4, class: 'spark-dot spark-' + statusClass(status) }));
+  container.appendChild(s);
+}
 
-    // Barra
-    const rect = document.createElementNS(SVGNS, 'rect');
-    rect.setAttribute('class', 'bar-rect');
-    rect.setAttribute('x', x.toFixed(1));
-    rect.setAttribute('width', barW.toFixed(1));
-    rect.setAttribute('rx', '5');
-    // Estado inicial (para animar el crecimiento)
-    rect.setAttribute('y', baseY);
-    rect.setAttribute('height', 0);
-    group.appendChild(rect);
+/* ============================ Bullet (actual vs meta) ============================ */
+function renderBullet(container, k) {
+  const W = 150, H = 14;
+  const s = svg('svg', { class: 'bullet', viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'none' });
+  const att = Math.min(attainment(k), 1.15);        // relleno proporcional (capado)
+  const st = statusOf(k);
+  // pista
+  s.appendChild(svg('rect', { x: 0, y: H / 2 - 3, width: W, height: 6, rx: 3, class: 'bullet-track' }));
+  // relleno
+  s.appendChild(svg('rect', { x: 0, y: H / 2 - 3, width: (att / 1.15 * W).toFixed(1), height: 6, rx: 3, class: 'bullet-fill fill-' + statusClass(st) }));
+  // tick de meta (siempre en 1.0 = meta => posición meta/1.15)
+  const tx = (1 / 1.15) * W;
+  s.appendChild(svg('line', { x1: tx.toFixed(1), y1: 1, x2: tx.toFixed(1), y2: H - 1, class: 'bullet-target' }));
+  container.appendChild(s);
+}
 
-    // Valor sobre la barra
-    const val = document.createElementNS(SVGNS, 'text');
-    val.setAttribute('class', 'bar-value');
-    val.setAttribute('x', (x + barW / 2).toFixed(1));
-    val.setAttribute('y', (y - 6).toFixed(1));
-    val.setAttribute('text-anchor', 'middle');
-    val.textContent = v;
-    group.appendChild(val);
-
-    // Etiqueta del mes
-    const lbl = document.createElementNS(SVGNS, 'text');
-    lbl.setAttribute('class', 'bar-label');
-    lbl.setAttribute('x', (x + barW / 2).toFixed(1));
-    lbl.setAttribute('y', baseY + 20);
-    lbl.setAttribute('text-anchor', 'middle');
-    lbl.textContent = labels[i] || '';
-    group.appendChild(lbl);
-
-    // Animación
-    requestAnimationFrame(() => {
-      rect.setAttribute('y', y.toFixed(1));
-      rect.setAttribute('height', h.toFixed(1));
-    });
+/* ============================ Pulso ejecutivo ============================ */
+function renderPulso() {
+  const wrap = document.getElementById('pulso');
+  clear(wrap);
+  DATA.destacados.forEach(id => {
+    const k = kpi(id);
+    const st = statusOf(k);
+    const d = delta(k);
+    const card = el('article', { class: 'card kpi' }, [
+      el('div', { class: 'kpi-top' }, [
+        makeDot(st),
+        el('p', { class: 'kpi-label', text: k.nombre })
+      ]),
+      el('p', { class: 'kpi-value', text: fmt(k) }),
+      el('p', { class: 'kpi-sub muted', text: 'Meta ' + fmtMeta(k) }),
+      el('p', { class: 'kpi-delta ' + (d.mejora ? 'up' : 'down'), text: d.texto })
+    ]);
+    const sparkBox = el('div', { class: 'kpi-spark' });
+    renderSparkline(sparkBox, k.trend, st);
+    card.appendChild(sparkBox);
+    wrap.appendChild(card);
   });
 }
+
+/* ============================ Mapa estratégico ============================ */
+function renderStrategyMap() {
+  const host = document.getElementById('smap');
+  clear(host);
+
+  const W = 760, padX = 18, titleH = 30, pillH = 30, rowGap = 12, bandGap = 24, pillGapX = 10;
+  const usableW = W - padX * 2;
+  const bneck = bottleneck();
+
+  // Modo de énfasis:
+  //  - Filtro por área  -> se resaltan las aristas que tocan esa área.
+  //  - Si no hay filtro -> se enfoca UNA cadena (la del clic, o por defecto la
+  //    del cuello de botella). Evita la maraña de mostrar las 20 aristas juntas.
+  let chainSet = null;
+  if (!STATE.filtro) {
+    const base = STATE.chain || (bneck ? [bneck, ...upstream(bneck), ...downstream(bneck)] : []);
+    chainSet = new Set(base);
+  }
+
+  // 1) Layout por tier (perspectivas en el orden declarado: financiera arriba).
+  const pos = {};   // id -> {cx, cy}
+  const layout = [];
+  let y = 14;
+  DATA.perspectivas.forEach(p => {
+    const ks = DATA.kpis.filter(k => k.perspectiva === p.id);
+    const count = ks.length;
+    const rows = count <= 4 ? 1 : Math.ceil(count / Math.ceil(count / 4));
+    const perRow = Math.ceil(count / rows);
+    const pillW = (usableW - (perRow - 1) * pillGapX) / perRow;
+    const bandH = titleH + rows * pillH + (rows - 1) * rowGap + 14;
+    const pills = ks.map((k, i) => {
+      const row = Math.floor(i / perRow);
+      const inRow = ks.slice(row * perRow, row * perRow + perRow).length;
+      const col = i - row * perRow;
+      const rowW = inRow * pillW + (inRow - 1) * pillGapX;
+      const offX = padX + (usableW - rowW) / 2;
+      const px = offX + col * (pillW + pillGapX);
+      const py = y + titleH + row * (pillH + rowGap);
+      pos[k.id] = { cx: px + pillW / 2, cy: py + pillH / 2 };
+      return { k, px, py, pillW };
+    });
+    layout.push({ p, ks, top: y, bandH, pills });
+    y += bandH + bandGap;
+  });
+  const totalH = y - bandGap + 14;
+
+  const s = svg('svg', { class: 'smap-svg', viewBox: `0 0 ${W} ${totalH}`, role: 'img', 'aria-label': 'Mapa estratégico BSC con cadenas de impacto' });
+
+  // defs: marcador de flecha
+  const defs = svg('defs');
+  ['arrow', 'arrow-lit'].forEach(id => {
+    const m = svg('marker', { id, markerWidth: 7, markerHeight: 7, refX: 6, refY: 3, orient: 'auto', markerUnits: 'userSpaceOnUse' });
+    m.appendChild(svg('path', { d: 'M0,0 L6,3 L0,6 Z', class: id === 'arrow-lit' ? 'edge-head-lit' : 'edge-head' }));
+    defs.appendChild(m);
+  });
+  s.appendChild(defs);
+
+  // 2) Bandas + títulos
+  layout.forEach(band => {
+    const score = avgAttainment(band.ks);
+    const st = statusFromScore(score);
+    s.appendChild(svg('rect', { x: padX - 8, y: band.top, width: usableW + 16, height: band.bandH, rx: 12, class: 'smap-tier tier-' + statusClass(st) }));
+    const areasTxt = band.p.areas.map(a => (DATA.areas[a] || {}).nombre || a).join(' · ');
+    const t = svg('text', { x: padX, y: band.top + 20, class: 'smap-tier-name' });
+    t.textContent = band.p.nombre;
+    s.appendChild(t);
+    const sub = svg('text', { x: padX, y: band.top + 20, class: 'smap-tier-sub', 'text-anchor': 'end' });
+    sub.setAttribute('x', W - padX);
+    sub.textContent = 'Salud ' + (score == null ? '—' : Math.round(score * 100) + '%') + '  ·  ' + areasTxt;
+    s.appendChild(sub);
+  });
+
+  // 3) Aristas (debajo de las píldoras)
+  DATA.impactos.forEach(e => {
+    const a = pos[e.de], b = pos[e.a];
+    if (!a || !b) return;
+    const srcSt = statusOf(kpi(e.de));
+    const lit = srcSt !== 'ok';
+    let prominente, dim;
+    if (STATE.filtro) {
+      const tocaArea = kpi(e.de).area === STATE.filtro || kpi(e.a).area === STATE.filtro;
+      prominente = lit && tocaArea;
+      dim = !tocaArea;
+    } else {
+      const inChain = chainSet.has(e.de) && chainSet.has(e.a);
+      prominente = lit && inChain;
+      dim = !prominente;                // fuera de la cadena enfocada => tenue
+    }
+    // Curva en S con desvío lateral para separar aristas paralelas.
+    const midY = (a.cy + b.cy) / 2;
+    const bow = ((e.de.charCodeAt(0) + e.a.length) % 5 - 2) * 10;
+    const d = `M ${a.cx.toFixed(1)} ${a.cy.toFixed(1)} C ${(a.cx + bow).toFixed(1)} ${midY.toFixed(1)}, ${(b.cx + bow).toFixed(1)} ${midY.toFixed(1)}, ${b.cx.toFixed(1)} ${b.cy.toFixed(1)}`;
+    const cls = ['edge'];
+    if (prominente) cls.push('edge-lit edge-' + statusClass(srcSt) + ' is-chain');
+    else cls.push('edge-faint');
+    if (dim) cls.push('is-dim');
+    const path = svg('path', { d, class: cls.join(' '), fill: 'none', 'marker-end': prominente ? 'url(#arrow-lit)' : 'url(#arrow)' });
+    const tt = svg('title'); tt.textContent = e.regla; path.appendChild(tt);
+    s.appendChild(path);
+  });
+
+  // 4) Píldoras (encima de las aristas)
+  layout.forEach(band => {
+    band.pills.forEach(({ k, px, py, pillW }) => {
+      const st = statusOf(k);
+      // Las píldoras conservan su color de estado (visión 360°). Solo se atenúan
+      // al filtrar por un área distinta. La cadena enfocada se marca con anillo.
+      const dim = STATE.filtro && k.area !== STATE.filtro;
+      const inChain = chainSet && chainSet.has(k.id);
+      const g = svg('g', { class: 'smap-node node-' + statusClass(st) + (dim ? ' is-dim' : '') + (inChain ? ' in-chain' : '') + (k.id === bneck ? ' is-bottleneck' : ''), tabindex: 0 });
+      g.appendChild(svg('rect', { x: px.toFixed(1), y: py.toFixed(1), width: pillW.toFixed(1), height: pillH, rx: 8, class: 'node-rect' }));
+      // punto de estado
+      g.appendChild(svg('circle', { cx: (px + 12).toFixed(1), cy: (py + pillH / 2).toFixed(1), r: 4, class: 'node-dot dot-' + statusClass(st) }));
+      const label = svg('text', { x: (px + 22).toFixed(1), y: (py + pillH / 2 + 3.5).toFixed(1), class: 'node-label' });
+      label.textContent = (k.id === bneck ? '⛔ ' : '') + shortName(k.id);
+      g.appendChild(label);
+      const tt = svg('title');
+      tt.textContent = `${areaLabel(k)} — ${k.nombre}\nActual ${fmt(k)} · Meta ${fmtMeta(k)} · Cumpl. ${pct(attainment(k))}\nFuente: ${DATA.fuentes[k.fuente].nombre}` + (k.id === bneck ? '\n⛔ Cuello de botella del sistema' : '');
+      g.appendChild(tt);
+      g.addEventListener('click', () => highlightChain(k.id));
+      g.addEventListener('keydown', ev => { if (ev.key === 'Enter') highlightChain(k.id); });
+      s.appendChild(g);
+    });
+  });
+
+  host.appendChild(s);
+}
+
+// Al hacer clic en una píldora: iluminar su vecindario causal (arriba y abajo).
+function highlightChain(id) {
+  STATE.chain = [id, ...upstream(id), ...downstream(id)];
+  STATE.filtro = null;
+  syncSidebar();
+  renderStrategyMap();
+  renderMatrix();
+  renderBrechas();
+}
+
+/* ============================ Matriz de Salud 360° ============================ */
+function matrixAreas() {
+  // Áreas presentes en los datos, en orden fijo (las 5 del CM + Personas transversal).
+  const order = ['marketing', 'ventas', 'logistica', 'servicio', 'finanzas', 'transversal'];
+  return order.filter(a => DATA.kpis.some(k => k.area === a));
+}
+
+function renderMatrix() {
+  const host = document.getElementById('matrix');
+  clear(host);
+  const areas = matrixAreas();
+  const persps = DATA.perspectivas;
+
+  const table = el('table', { class: 'matrix' });
+  // encabezado
+  const thead = el('thead');
+  const hr = el('tr', {}, [el('th', { class: 'mx-corner', text: 'Área \\ Perspectiva' })]);
+  persps.forEach(p => hr.appendChild(el('th', { class: 'mx-persp', text: p.nombre })));
+  hr.appendChild(el('th', { class: 'mx-total', text: 'Salud área' }));
+  thead.appendChild(hr);
+  table.appendChild(thead);
+
+  const tbody = el('tbody');
+  areas.forEach(area => {
+    const areaKpis = DATA.kpis.filter(k => k.area === area);
+    const expanded = STATE.expandArea === area;
+    const dimRow = STATE.filtro && STATE.filtro !== area && area !== 'transversal';
+    const tr = el('tr', { class: 'mx-row' + (expanded ? ' is-expanded' : '') + (dimRow ? ' is-dim' : '') });
+    const an = DATA.areas[area];
+    tr.appendChild(el('td', { class: 'mx-area' }, [
+      el('span', { class: 'mx-ico', text: an.icono }),
+      el('span', { text: an.nombre })
+    ]));
+    persps.forEach(p => {
+      const score = cellScore(area, p.id);
+      const st = statusFromScore(score);
+      const imported = score != null && importedRisk(area, p.id);
+      const td = el('td', { class: 'mx-cell cell-' + statusClass(st) + (imported ? ' is-imported' : '') });
+      if (score == null) { td.textContent = '—'; td.className = 'mx-cell cell-na'; }
+      else {
+        td.textContent = Math.round(score * 100) + '%';
+        const names = DATA.kpis.filter(k => k.area === area && k.perspectiva === p.id).map(k => '• ' + k.nombre + ' (' + pct(attainment(k)) + ')').join('\n');
+        td.title = names + (imported ? '\n⚠ Riesgo importado desde otra área' : '');
+      }
+      tr.appendChild(td);
+    });
+    // salud del área
+    const areaScore = avgAttainment(areaKpis);
+    tr.appendChild(el('td', { class: 'mx-cell mx-total cell-' + statusClass(statusFromScore(areaScore)), text: areaScore == null ? '—' : Math.round(areaScore * 100) + '%' }));
+    tr.addEventListener('click', () => { STATE.expandArea = expanded ? null : area; renderMatrix(); });
+    tbody.appendChild(tr);
+
+    // fila expandida con KPIs del área
+    if (expanded) {
+      const trx = el('tr', { class: 'mx-detail-row' });
+      const td = el('td', { colspan: persps.length + 2 });
+      const box = el('div', { class: 'mx-detail' });
+      areaKpis.forEach(k => box.appendChild(kpiRow(k)));
+      td.appendChild(box);
+      trx.appendChild(td);
+      tbody.appendChild(trx);
+    }
+  });
+
+  // fila de salud por perspectiva
+  const trf = el('tr', { class: 'mx-foot' });
+  trf.appendChild(el('td', { class: 'mx-area', text: 'Salud perspectiva' }));
+  persps.forEach(p => {
+    const score = avgAttainment(kpisByPerspectiva(p.id));
+    trf.appendChild(el('td', { class: 'mx-cell cell-' + statusClass(statusFromScore(score)), text: score == null ? '—' : Math.round(score * 100) + '%' }));
+  });
+  const glob = avgAttainment(DATA.kpis);
+  trf.appendChild(el('td', { class: 'mx-cell mx-total cell-' + statusClass(statusFromScore(glob)), text: Math.round(glob * 100) + '%' }));
+  tbody.appendChild(trf);
+
+  table.appendChild(tbody);
+  host.appendChild(table);
+}
+
+// Fila detallada de un KPI (nombre · valor/meta · bullet · spark · delta · fuente)
+function kpiRow(k) {
+  const st = statusOf(k);
+  const d = delta(k);
+  const row = el('div', { class: 'kpi-row' }, [
+    makeDot(st),
+    el('div', { class: 'kr-name' }, [
+      el('span', { text: k.nombre }),
+      el('span', { class: 'kr-src', text: DATA.fuentes[k.fuente].nombre })
+    ]),
+    el('div', { class: 'kr-val' }, [
+      el('span', { class: 'kr-actual', text: fmt(k) }),
+      el('span', { class: 'kr-meta muted', text: '/ ' + fmtMeta(k) })
+    ])
+  ]);
+  const bulletBox = el('div', { class: 'kr-bullet' }); renderBullet(bulletBox, k); row.appendChild(bulletBox);
+  const sparkBox = el('div', { class: 'kr-spark' }); renderSparkline(sparkBox, k.trend, st); row.appendChild(sparkBox);
+  row.appendChild(el('div', { class: 'kr-delta ' + (d.mejora ? 'up' : 'down'), text: d.texto }));
+  return row;
+}
+
+/* ============================ Brechas y cadenas ============================ */
+function renderBrechas() {
+  const host = document.getElementById('brechas');
+  clear(host);
+  const bneck = bottleneck();
+  const brechas = topBrechas(6, STATE.filtro);
+
+  if (!brechas.length) {
+    host.appendChild(el('p', { class: 'muted', text: 'Sin brechas en el filtro actual — todos los indicadores en meta.' }));
+    return;
+  }
+
+  brechas.forEach(k => {
+    const st = statusOf(k);
+    const chain = downstream(k.id).filter(id => statusOf(kpi(id)) !== 'ok');
+    const row = el('div', { class: 'brecha' + (k.id === bneck ? ' is-bottleneck' : '') });
+
+    const head = el('div', { class: 'brecha-head' }, [
+      makeDot(st),
+      el('div', { class: 'brecha-id' }, [
+        el('span', { class: 'brecha-name', text: (k.id === bneck ? '⛔ ' : '') + k.nombre }),
+        el('span', { class: 'brecha-meta muted', text: areaLabel(k) + ' · ' + perspLabel(k.perspectiva) + ' · fuente ' + DATA.fuentes[k.fuente].nombre })
+      ]),
+      el('div', { class: 'brecha-val' }, [
+        el('span', { class: 'kr-actual', text: fmt(k) }),
+        el('span', { class: 'kr-meta muted', text: 'meta ' + fmtMeta(k) })
+      ]),
+      el('span', { class: 'pill pill-' + (st === 'bad' ? 'bad' : 'warn'), text: st === 'bad' ? 'Crítico' : 'En riesgo' })
+    ]);
+    const bulletBox = el('div', { class: 'brecha-bullet' }); renderBullet(bulletBox, k); head.insertBefore(bulletBox, head.lastChild);
+    row.appendChild(head);
+
+    // cadena de impacto aguas abajo
+    if (chain.length) {
+      const chBox = el('div', { class: 'chain' });
+      chBox.appendChild(el('span', { class: 'chain-lbl', text: 'Impacto sistémico:' }));
+      const seq = [k.id, ...chain];
+      seq.forEach((id, i) => {
+        if (i) chBox.appendChild(el('span', { class: 'chain-arrow', text: '→' }));
+        chBox.appendChild(el('span', { class: 'chip chip-' + statusClass(statusOf(kpi(id))), text: shortName(id) }));
+      });
+      row.appendChild(chBox);
+    }
+    row.addEventListener('click', () => {
+      STATE.chain = [k.id, ...downstream(k.id)];
+      STATE.filtro = null; syncSidebar();
+      renderStrategyMap(); renderMatrix(); renderBrechas();
+      document.getElementById('smap').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    host.appendChild(row);
+  });
+}
+
+/* ============================ Diagnóstico (encabezado) ============================ */
+function renderDiagnostico() {
+  const host = document.getElementById('diagnostico');
+  if (!host) return;
+  clear(host);
+  const bId = bottleneck();
+  if (!bId) { host.appendChild(el('span', { text: 'Sin cuellos de botella activos.' })); return; }
+  const b = kpi(bId);
+  const chain = [bId, ...downstream(bId).filter(id => statusOf(kpi(id)) !== 'ok')];
+  const cadena = chain.map(id => shortName(id)).join(' → ');
+  host.appendChild(el('span', { class: 'diag-badge', text: '⛔ Cuello de botella' }));
+  host.appendChild(el('span', { class: 'diag-txt', html:
+    `<strong>${b.nombre}</strong> (${areaLabel(b)}) está arrastrando la cadena <em>${cadena}</em>.` }));
+}
+
+/* ============================ Sidebar / filtro ============================ */
+function buildSidebarFilter() {
+  const nav = document.getElementById('area-filter');
+  if (!nav) return;
+  clear(nav);
+  const items = [{ id: null, nombre: 'Todas las áreas', icono: '🌐' }]
+    .concat(['marketing', 'ventas', 'logistica', 'servicio', 'finanzas'].map(a => ({ id: a, nombre: DATA.areas[a].nombre, icono: DATA.areas[a].icono })));
+  items.forEach(it => {
+    const a = el('a', { class: 'nav-item', href: '#', 'data-area': it.id || '' }, [
+      el('span', { class: 'nav-ico', text: it.icono }),
+      el('span', { text: it.nombre })
+    ]);
+    a.addEventListener('click', ev => {
+      ev.preventDefault();
+      STATE.filtro = it.id; STATE.chain = null; STATE.expandArea = it.id;
+      syncSidebar(); renderStrategyMap(); renderMatrix(); renderBrechas();
+    });
+    nav.appendChild(a);
+  });
+  syncSidebar();
+}
+function syncSidebar() {
+  document.querySelectorAll('#area-filter .nav-item').forEach(a => {
+    const val = a.getAttribute('data-area') || null;
+    a.classList.toggle('is-active', val === STATE.filtro);
+  });
+}
+
+/* ============================ Orquestación ============================ */
+function renderAll() {
+  renderPulso();
+  renderDiagnostico();
+  renderStrategyMap();
+  renderMatrix();
+  renderBrechas();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const yearEl = document.getElementById('year');
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+  const periodEl = document.getElementById('periodo');
+  if (periodEl) periodEl.textContent = DATA.meta.periodo + ' · datos ficticios';
+
+  buildSidebarFilter();
+  // Al cargar: visión 360° completa (todas las cadenas encendidas + cuello de
+  // botella señalado). El foco sobre una cadena se activa al hacer clic.
+  STATE.chain = null;
+  renderAll();
+});
