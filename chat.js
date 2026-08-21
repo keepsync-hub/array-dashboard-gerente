@@ -27,7 +27,9 @@ const CEOChat = (function () {
     clientes_nuevos:['clientes nuevos','nuevos clientes','captacion'],
     sla:['sla','nivel de servicio','cumplimiento sla'],
     uptime:['uptime','disponibilidad','parque instalado','mif'],
-    ftf:['first time fix','first-time-fix','ftf','reparacion a la primera','primera visita'],
+    ftf:['first time fix','first-time-fix','ftf','reparacion a la primera','primera visita','multiples visitas','revisitas','prueba y error','visitas repetidas'],
+    resolucion_remota:['resolucion remota','remota','sin visita','atencion remota','soporte remoto','diagnostico remoto','resolver remoto'],
+    costo_servicio:['costo de servicio','costo terreno','costo de terreno','costo de visita','visitas tecnicas','costo del servicio','costo en terreno'],
     resp_tecnico:['tiempo de respuesta tecnico','respuesta tecnica','tiempo tecnico'],
     otif:['otif','entregas','despacho','entrega a tiempo'],
     rot_inventario:['inventario','rotacion de inventario','stock','repuestos'],
@@ -91,18 +93,31 @@ const CEOChat = (function () {
       ${reco(`Poner el foco en <b>${shortName(bn.id)}</b>: es la palanca que hoy más protege el ${money}.`)}`;
   }
 
+  // Recomendación específica por frente (según el KPI raíz).
+  function recoFrente(id, k) {
+    if (id === 'resolucion_remota' || k.area === 'servicio')
+      return `Potenciar la <b>resolución remota</b> (diagnóstico previo + herramientas + certificación) evita visitas en terreno: sube el First-Time-Fix y el SLA, baja el costo de servicio y protege el ${money}.`;
+    if (k.subarea === 'preventa' || id.startsWith('preventa'))
+      return `Dar capacidad y estandarizar la <b>preventa</b> desbloquea la conversión comercial y protege el ${money}.`;
+    return `Actuar sobre <b>${k.nombre}</b> destraba su cadena y protege el ${money}.`;
+  }
+
   function ansBottleneck() {
-    const id = bottleneck();
-    if (!id) return 'No hay cuellos de botella activos: todos los indicadores clave están en meta.';
-    const k = kpi(id);
-    const chain = [id, ...downstream(id).filter(x => statusOf(kpi(x)) !== 'ok')];
-    const enablers = upstream(id).filter(x => statusOf(kpi(x)) !== 'ok').sort((a, b) => gap(kpi(b)) - gap(kpi(a)));
-    return `Tu cuello de botella es <b>${k.nombre}</b> (${areaLabel(k)}): <b>${fmt(k)}</b> vs meta ${fmtMeta(k)} ${chip(statusOf(k))}.
-      <div class="ans-sub">Cómo se propaga</div>
-      <div class="ans-chain">${chainStr(chain)}</div>
-      ${enablers.length ? `<div class="ans-sub">Qué lo alimenta aguas arriba</div>
-        <ul class="ans-list">${enablers.slice(0, 3).map(x => `<li>${shortName(x)} — ${fmt(kpi(x))} / meta ${fmtMeta(kpi(x))} ${chip(statusOf(kpi(x)))}</li>`).join('')}</ul>` : ''}
-      ${reco(`Estandarizar y dar capacidad a <b>${areaLabel(k)}</b> desbloquea la conversión comercial y protege el ${money}. Es el movimiento de mayor retorno hoy.`)}`;
+    const ids = bottlenecks(2);
+    if (!ids.length) return 'No hay cuellos de botella activos: todos los indicadores clave están en meta.';
+    const intro = ids.length > 1
+      ? `Hoy tienes <b>${ids.length} frentes críticos</b> que arrastran el resultado:`
+      : `Tu cuello de botella es:`;
+    const bloques = ids.map((id, i) => {
+      const k = kpi(id);
+      const chain = [id, ...orderedDownstreamProblems(id)];
+      const etiqueta = k.area === 'servicio' ? 'Operativo · Servicio' : (k.subarea === 'preventa' ? 'Comercial · Preventa' : areaLabel(k));
+      return `<div class="ans-sub">${ids.length > 1 ? (i + 1) + '. ' : ''}${etiqueta}</div>
+        <div>⛔ <b>${k.nombre}</b> (${areaLabel(k)}): <b>${fmt(k)}</b> vs meta ${fmtMeta(k)} ${chip(statusOf(k))}</div>
+        <div class="ans-chain">${chainStr(chain)}</div>
+        ${reco(recoFrente(id, k))}`;
+    }).join('');
+    return `${intro}${bloques}`;
   }
 
   function ansOportunidades() {
@@ -217,7 +232,7 @@ const CEOChat = (function () {
       // "por qué" sin KPI → asume el resultado financiero
       return ansCausa('ebitda');
     }
-    if (/(cuello de botella|bottleneck|principal problema|mayor problema|que esta mal|que esta fallando|donde esta el problema|restriccion|traba|freno principal)/.test(q)) return ansBottleneck();
+    if (/(cuellos? de botella|bottleneck|frentes? critico|principal problema|mayor problema|que esta mal|que esta fallando|donde esta el problema|restriccion|traba|freno principal)/.test(q)) return ansBottleneck();
     if (/(oportunidad|mejorar|prioridad|prioridades|donde enfocar|quick win|donde invertir|palanca|donde poner el foco|que hago primero)/.test(q)) return ansOportunidades();
 
     const area = findArea(q);
@@ -233,12 +248,12 @@ const CEOChat = (function () {
   }
 
   const SUGGESTIONS = [
-    '¿Cuál es el principal cuello de botella?',
+    '¿Cuáles son los cuellos de botella?',
+    '¿Por qué está bajo el First-Time-Fix?',
+    '¿Qué impacto tiene mejorar la resolución remota?',
+    '¿Cómo va Servicio Técnico?',
     '¿Dónde están mis mayores oportunidades?',
-    '¿Por qué cae el EBITDA?',
-    '¿Cómo va Ventas?',
-    'Resumen ejecutivo',
-    '¿Qué impacto tiene mejorar la preventa?'
+    'Resumen ejecutivo'
   ];
 
   /* ---------------- Interfaz (DOM) ---------------- */
@@ -285,8 +300,12 @@ const CEOChat = (function () {
 
   function welcome() {
     const g = avgAttainment(DATA.kpis);
-    const bn = kpi(bottleneck());
-    bubble('bot', `Hola 👋 Soy tu asistente de datos. El negocio está en <b>${pct(g)}</b> de salud y hoy el principal freno es <b>${bn.nombre}</b> (${areaLabel(bn)}).
+    const ids = bottlenecks(2);
+    const frentes = ids.map(id => `<b>${kpi(id).nombre}</b> (${areaLabel(kpi(id))})`).join(' y ');
+    const lead = ids.length > 1
+      ? `Hoy tienes <b>${ids.length} frentes críticos</b>: ${frentes}.`
+      : `Hoy el principal freno es ${frentes}.`;
+    bubble('bot', `Hola 👋 Soy tu asistente de datos. El negocio está en <b>${pct(g)}</b> de salud. ${lead}
       <div class="ans-note">Pregúntame por un área, un indicador, las causas de un problema o las oportunidades de mejora. También puedes usar las sugerencias de abajo.</div>`);
   }
 

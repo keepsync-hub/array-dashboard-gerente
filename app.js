@@ -114,15 +114,16 @@ function renderStrategyMap() {
 
   const W = 760, padX = 18, titleH = 30, pillH = 30, rowGap = 12, bandGap = 24, pillGapX = 10;
   const usableW = W - padX * 2;
-  const bneck = bottleneck();
+  const bnecks = bottlenecks(2);            // dos frentes críticos
+  const bneckSet = new Set(bnecks);
 
   // Modo de énfasis:
   //  - Filtro por área  -> se resaltan las aristas que tocan esa área.
-  //  - Si no hay filtro -> se enfoca UNA cadena (la del clic, o por defecto la
-  //    del cuello de botella). Evita la maraña de mostrar las 20 aristas juntas.
+  //  - Si no hay filtro -> se enfocan las cadenas de los cuellos de botella (o
+  //    la del clic). Evita la maraña de mostrar todas las aristas juntas.
   let chainSet = null;
   if (!STATE.filtro) {
-    const base = STATE.chain || (bneck ? [bneck, ...upstream(bneck), ...downstream(bneck)] : []);
+    const base = STATE.chain || bnecks.reduce((acc, id) => acc.concat(id, upstream(id), downstream(id)), []);
     chainSet = new Set(base);
   }
 
@@ -216,15 +217,15 @@ function renderStrategyMap() {
       // al filtrar por un área distinta. La cadena enfocada se marca con anillo.
       const dim = STATE.filtro && k.area !== STATE.filtro;
       const inChain = chainSet && chainSet.has(k.id);
-      const g = svg('g', { class: 'smap-node node-' + statusClass(st) + (dim ? ' is-dim' : '') + (inChain ? ' in-chain' : '') + (k.id === bneck ? ' is-bottleneck' : ''), tabindex: 0 });
+      const g = svg('g', { class: 'smap-node node-' + statusClass(st) + (dim ? ' is-dim' : '') + (inChain ? ' in-chain' : '') + (bneckSet.has(k.id) ? ' is-bottleneck' : ''), tabindex: 0 });
       g.appendChild(svg('rect', { x: px.toFixed(1), y: py.toFixed(1), width: pillW.toFixed(1), height: pillH, rx: 8, class: 'node-rect' }));
       // punto de estado
       g.appendChild(svg('circle', { cx: (px + 12).toFixed(1), cy: (py + pillH / 2).toFixed(1), r: 4, class: 'node-dot dot-' + statusClass(st) }));
       const label = svg('text', { x: (px + 22).toFixed(1), y: (py + pillH / 2 + 3.5).toFixed(1), class: 'node-label' });
-      label.textContent = (k.id === bneck ? '⛔ ' : '') + shortName(k.id);
+      label.textContent = (bneckSet.has(k.id) ? '⛔ ' : '') + shortName(k.id);
       g.appendChild(label);
       const tt = svg('title');
-      tt.textContent = `${areaLabel(k)} — ${k.nombre}\nActual ${fmt(k)} · Meta ${fmtMeta(k)} · Cumpl. ${pct(attainment(k))}\nFuente: ${DATA.fuentes[k.fuente].nombre}` + (k.id === bneck ? '\n⛔ Cuello de botella del sistema' : '');
+      tt.textContent = `${areaLabel(k)} — ${k.nombre}\nActual ${fmt(k)} · Meta ${fmtMeta(k)} · Cumpl. ${pct(attainment(k))}\nFuente: ${DATA.fuentes[k.fuente].nombre}` + (bneckSet.has(k.id) ? '\n⛔ Cuello de botella del sistema' : '');
       g.appendChild(tt);
       g.addEventListener('click', () => highlightChain(k.id));
       g.addEventListener('keydown', ev => { if (ev.key === 'Enter') highlightChain(k.id); });
@@ -349,7 +350,7 @@ function kpiRow(k) {
 function renderBrechas() {
   const host = document.getElementById('brechas');
   clear(host);
-  const bneck = bottleneck();
+  const bneckSet = new Set(bottlenecks(2));
   const brechas = topBrechas(6, STATE.filtro);
 
   if (!brechas.length) {
@@ -359,13 +360,13 @@ function renderBrechas() {
 
   brechas.forEach(k => {
     const st = statusOf(k);
-    const chain = downstream(k.id).filter(id => statusOf(kpi(id)) !== 'ok');
-    const row = el('div', { class: 'brecha' + (k.id === bneck ? ' is-bottleneck' : '') });
+    const chain = orderedDownstreamProblems(k.id);
+    const row = el('div', { class: 'brecha' + (bneckSet.has(k.id) ? ' is-bottleneck' : '') });
 
     const head = el('div', { class: 'brecha-head' }, [
       makeDot(st),
       el('div', { class: 'brecha-id' }, [
-        el('span', { class: 'brecha-name', text: (k.id === bneck ? '⛔ ' : '') + k.nombre }),
+        el('span', { class: 'brecha-name', text: (bneckSet.has(k.id) ? '⛔ ' : '') + k.nombre }),
         el('span', { class: 'brecha-meta muted', text: areaLabel(k) + ' · ' + perspLabel(k.perspectiva) + ' · fuente ' + DATA.fuentes[k.fuente].nombre })
       ]),
       el('div', { class: 'brecha-val' }, [
@@ -403,14 +404,21 @@ function renderDiagnostico() {
   const host = document.getElementById('diagnostico');
   if (!host) return;
   clear(host);
-  const bId = bottleneck();
-  if (!bId) { host.appendChild(el('span', { text: 'Sin cuellos de botella activos.' })); return; }
-  const b = kpi(bId);
-  const chain = [bId, ...downstream(bId).filter(id => statusOf(kpi(id)) !== 'ok')];
-  const cadena = chain.map(id => shortName(id)).join(' → ');
-  host.appendChild(el('span', { class: 'diag-badge', text: '⛔ Cuello de botella' }));
-  host.appendChild(el('span', { class: 'diag-txt', html:
-    `<strong>${b.nombre}</strong> (${areaLabel(b)}) está arrastrando la cadena <em>${cadena}</em>.` }));
+  const ids = bottlenecks(2);
+  if (!ids.length) { host.appendChild(el('span', { text: 'Sin cuellos de botella activos.' })); return; }
+
+  const titulo = ids.length > 1 ? `${ids.length} frentes críticos` : 'Cuello de botella';
+  host.appendChild(el('div', { class: 'diag-title' }, [
+    el('span', { class: 'diag-badge', text: '⛔ ' + titulo })
+  ]));
+
+  ids.forEach(bId => {
+    const b = kpi(bId);
+    const chain = [bId, ...orderedDownstreamProblems(bId)];
+    const cadena = chain.map(id => shortName(id)).join(' → ');
+    host.appendChild(el('div', { class: 'diag-item', html:
+      `<strong>${b.nombre}</strong> (${areaLabel(b)}) arrastra la cadena <em>${cadena}</em>.` }));
+  });
 }
 
 /* ============================ Sidebar / filtro ============================ */

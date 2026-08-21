@@ -67,6 +67,9 @@ const DATA = {
     { id:'dso', nombre:'DSO (días de cobro)', perspectiva:'financiera', area:'finanzas',
       unidad:'días', formato:'int', actual:62, meta:55, prev:59, sentido:'down', fuente:'ERP',
       trend:[54,55,57,56,58,59,61,62] },
+    { id:'costo_servicio', nombre:'Costo de servicio en terreno', perspectiva:'financiera', area:'servicio',
+      unidad:'', formato:'pct0', actual:122, meta:100, prev:114, sentido:'down', fuente:'ERP',
+      trend:[104,106,109,112,114,117,120,122] },
 
     // ===== CLIENTES =====
     { id:'nps', nombre:'NPS', perspectiva:'clientes', area:'marketing',
@@ -84,14 +87,17 @@ const DATA = {
 
     // ===== PROCESOS INTERNOS =====
     { id:'sla', nombre:'Cumplimiento SLA', perspectiva:'procesos', area:'servicio',
-      unidad:'%', formato:'pct1', actual:96.7, meta:97, prev:96.9, sentido:'up', fuente:'ITSM',
-      trend:[97.4,97.3,97.1,97.0,96.9,96.8,96.8,96.7] },
+      unidad:'%', formato:'pct1', actual:90.2, meta:97, prev:93.0, sentido:'up', fuente:'ITSM',
+      trend:[95.5,95.0,94.2,93.4,92.6,91.8,91.0,90.2] },
     { id:'uptime', nombre:'Uptime parque instalado', perspectiva:'procesos', area:'servicio',
       unidad:'%', formato:'pct1', actual:98.1, meta:98.5, prev:98.3, sentido:'up', fuente:'FSM',
       trend:[98.6,98.5,98.4,98.4,98.3,98.2,98.2,98.1] },
     { id:'ftf', nombre:'First-time-fix', perspectiva:'procesos', area:'servicio',
-      unidad:'%', formato:'pct0', actual:82, meta:85, prev:84, sentido:'up', fuente:'FSM',
-      trend:[86,85,85,84,84,83,83,82] },
+      unidad:'%', formato:'pct0', actual:72, meta:85, prev:78, sentido:'up', fuente:'FSM',
+      trend:[80,79,78,77,76,75,74,72] },
+    { id:'resolucion_remota', nombre:'Resolución remota (sin visita)', perspectiva:'procesos', area:'servicio',
+      unidad:'%', formato:'pct0', actual:38, meta:60, prev:44, sentido:'up', fuente:'ITSM',
+      trend:[52,50,48,46,44,42,40,38] },
     { id:'resp_tecnico', nombre:'Tiempo respuesta técnico', perspectiva:'procesos', area:'servicio',
       unidad:'h', formato:'dec1', actual:4.6, meta:4.0, prev:4.3, sentido:'down', fuente:'ITSM',
       trend:[3.9,4.0,4.1,4.2,4.3,4.4,4.5,4.6] },
@@ -146,7 +152,7 @@ const DATA = {
   ------------------------------------------------------------------------- */
   impactos: [
     // (1) Servicio → Clientes → Financiera
-    { de:'ftf', a:'sla', regla:'Menos reparaciones a la primera ⇒ más revisitas ⇒ SLA en riesgo.' },
+    { de:'ftf', a:'sla', regla:'Baja reparación a la primera ⇒ múltiples visitas por caso ⇒ satura terreno y se incumple el SLA.' },
     { de:'resp_tecnico', a:'sla', regla:'Mayor tiempo de respuesta técnico ⇒ incumplimiento de SLA.' },
     { de:'uptime', a:'sla', regla:'Menor disponibilidad del parque ⇒ SLA en riesgo.' },
     { de:'sla', a:'nps', regla:'Incumplir SLA deteriora la experiencia ⇒ baja el NPS.' },
@@ -166,8 +172,16 @@ const DATA = {
     { de:'otif', a:'uptime', regla:'Repuestos que no llegan a tiempo ⇒ equipos detenidos, cae el uptime.' },
 
     // (4) Aprendizaje → Procesos → Clientes
-    { de:'certificacion', a:'ftf', regla:'Menos técnicos certificados ⇒ menor first-time-fix.' },
-    { de:'capacitacion', a:'ftf', regla:'Menos capacitación ⇒ segundas visitas, baja el first-time-fix.' },
+    { de:'certificacion', a:'ftf', regla:'Desconocimiento técnico ⇒ reparación por prueba y error ⇒ baja el first-time-fix.' },
+    { de:'capacitacion', a:'ftf', regla:'Menos capacitación ⇒ segundas visitas y prueba y error ⇒ baja el first-time-fix.' },
+
+    // (4b) Servicio post-venta: resolución remota como palanca (evita visitas en terreno)
+    { de:'adopcion', a:'resolucion_remota', regla:'Baja adopción de herramientas FSM/diagnóstico remoto ⇒ menos casos resueltos sin visita.' },
+    { de:'certificacion', a:'resolucion_remota', regla:'Sin certificación técnica ⇒ menor capacidad de diagnosticar y resolver de forma remota.' },
+    { de:'resolucion_remota', a:'ftf', regla:'Sin diagnóstico/resolución remota previa, el técnico llega sin el problema acotado ⇒ prueba y error en terreno ⇒ baja el first-time-fix.' },
+    { de:'resolucion_remota', a:'sla', regla:'Todo el volumen de requerimientos se resuelve con visita ⇒ satura la capacidad de terreno ⇒ se incumple el SLA.' },
+    { de:'resolucion_remota', a:'costo_servicio', regla:'Cada caso resuelto con visita en lugar de remoto ⇒ mayor costo de servicio en terreno.' },
+    { de:'costo_servicio', a:'ebitda', regla:'Mayor costo de servicio en terreno ⇒ presiona el margen y el EBITDA.' },
 
     // (5) Aprendizaje → Ventas / Clientes
     { de:'adopcion', a:'conversion', regla:'Baja adopción de CRM ⇒ peor gestión de pipeline y conversión.' },
@@ -272,6 +286,34 @@ function downstream(id) {
   return order;
 }
 
+// Distancia causal (camino más largo) desde un KPI raíz a cada nodo aguas abajo.
+// Sirve para ordenar la cadena de impacto de causa → efecto (ningún efecto
+// aparece antes que su causa; el sumidero, EBITDA, queda al final).
+function distFromRoot(rootId) {
+  const dist = { [rootId]: 0 };
+  const nodes = [rootId, ...downstream(rootId)];
+  let changed = true;
+  while (changed) {
+    changed = false;
+    nodes.forEach(u => {
+      if (dist[u] === undefined) return;
+      (OUT[u] || []).forEach(e => {
+        const nd = dist[u] + 1;
+        if (dist[e.a] === undefined || nd > dist[e.a]) { dist[e.a] = nd; changed = true; }
+      });
+    });
+  }
+  return dist;
+}
+
+// Problemas aguas abajo de un KPI, ordenados por distancia causal (causa→efecto).
+function orderedDownstreamProblems(id) {
+  const dist = distFromRoot(id);
+  return downstream(id)
+    .filter(x => statusOf(kpi(x)) !== 'ok')
+    .sort((a, b) => (dist[a] || 0) - (dist[b] || 0));
+}
+
 // Cadena aguas arriba (ids que influyen sobre este KPI).
 function upstream(id) {
   const seen = new Set([id]), order = [], q = [id];
@@ -319,16 +361,48 @@ function downstreamProblemCount(id) {
 // si su cadena alcanza lo financiero). No es necesariamente la causa raíz: es
 // el nodo por donde pasa y se amplifica el mayor deterioro (típicamente un
 // proceso operativo, como la preventa en el embudo comercial).
+function bottleneckScore(id) {
+  const tocaFin = downstream(id).some(x => kpi(x).perspectiva === 'financiera') ? 1.4 : 1;
+  return gap(kpi(id)) * downstreamProblemCount(id) * tocaFin;
+}
+
+// Problemas NO financieros aguas abajo de un KPI (define el "frente": todas las
+// cadenas convergen en el EBITDA, así que dos frentes son distintos si golpean
+// resultados operativos/de cliente diferentes).
+function nonFinDownstreamProblems(id) {
+  return new Set([id, ...downstream(id)]
+    .filter(x => statusOf(kpi(x)) !== 'ok' && kpi(x).perspectiva !== 'financiera'));
+}
+
+// Cuellos de botella de FRENTES DISTINTOS (selección greedy): toma el de mayor
+// impacto y excluye a los que compartan su cadena (aguas arriba/abajo) o un
+// resultado no financiero aguas abajo. El siguiente elegido es un frente
+// independiente. Con los datos demo devuelve dos frentes: servicio (resolución
+// remota/FTF) y comercial (preventa), ambos con impacto en el EBITDA.
+function bottlenecks(n) {
+  let cands = DATA.kpis
+    .filter(k => statusOf(k) !== 'ok' && downstreamProblemCount(k.id) > 0)
+    .map(k => ({ id: k.id, score: bottleneckScore(k.id) }))
+    .sort((a, b) => b.score - a.score);
+  const out = [];
+  while (cands.length && out.length < (n || 1)) {
+    const pick = cands[0].id;
+    out.push(pick);
+    const rel = new Set([pick, ...upstream(pick), ...downstream(pick)]);
+    const pf = nonFinDownstreamProblems(pick);
+    cands = cands.filter(c => {
+      if (rel.has(c.id)) return false;
+      for (const x of nonFinDownstreamProblems(c.id)) if (pf.has(x)) return false;
+      return true;
+    });
+  }
+  return out;
+}
+
+// Cuello de botella principal (compatibilidad).
 function bottleneck() {
-  const cands = DATA.kpis.filter(k => statusOf(k) !== 'ok' && downstreamProblemCount(k.id) > 0);
-  if (!cands.length) return null;
-  const tocaFin = id => downstream(id).some(x => kpi(x).perspectiva === 'financiera') ? 1.4 : 1;
-  let best = null, bestScore = -1;
-  cands.forEach(k => {
-    const score = gap(k) * downstreamProblemCount(k.id) * tocaFin(k.id);
-    if (score > bestScore) { bestScore = score; best = k.id; }
-  });
-  return best;
+  const b = bottlenecks(1);
+  return b.length ? b[0] : null;
 }
 
 // Todos los ids de aristas "encendidas" (origen fuera de meta) para el mapa.

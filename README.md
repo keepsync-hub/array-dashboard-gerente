@@ -16,21 +16,23 @@ Sitio estático (HTML + CSS + JS, **sin dependencias externas**). Datos **fictic
 Pensado para un **CEO**: la primera pantalla es simple y accionable.
 
 - **Salud del negocio** — salud global + las 4 perspectivas BSC (Financiera, Clientes,
-  Procesos, Aprendizaje) con semáforo, y el **cuello de botella** destacado.
+  Procesos, Aprendizaje) con semáforo, y los **cuellos de botella** destacados (dos frentes
+  críticos: servicio/First-Time-Fix y comercial/preventa).
 - **💬 Chat "Pregúntale a tus datos"** — asistente conversacional **local** (sin backend)
   que responde preguntas sobre el negocio con un diagnóstico: cuellos de botella, causas,
   impacto de mejoras y oportunidades priorizadas. Trae preguntas de ejemplo sugeridas.
 - **📊 Análisis detallado (desplegable)** — para quien quiere profundizar:
   - **Mapa estratégico & cadenas de impacto** — 4 niveles del BSC con hilo conductor causal;
-    las flechas trazan cómo una brecha se propaga. Enfoca la cadena del cuello de botella (⛔).
+    las flechas trazan cómo una brecha se propaga. Enfoca las cadenas de los cuellos de botella (⛔).
   - **Matriz de salud 360°** — áreas × perspectivas, con *riesgo importado* y detalle por área.
   - **Brechas prioritarias** — gestión por excepción con su cadena de impacto.
   - **Origen de los datos** — sistema fuente simulado de cada indicador (CRM, ERP, ITSM/FSM, HRIS, CX…).
 
 ### Ejemplos de preguntas al chat
 
-> ¿Cuál es el principal cuello de botella? · ¿Dónde están mis mayores oportunidades? ·
-> ¿Por qué cae el EBITDA? · ¿Cómo va Ventas? · Resumen ejecutivo · ¿Qué impacto tiene mejorar la preventa?
+> ¿Cuáles son los cuellos de botella? · ¿Por qué está bajo el First-Time-Fix? ·
+> ¿Qué impacto tiene mejorar la resolución remota? · ¿Cómo va Servicio Técnico? ·
+> ¿Dónde están mis mayores oportunidades? · Resumen ejecutivo
 
 ## ✏️ Editar indicadores
 
