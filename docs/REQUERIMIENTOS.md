@@ -97,6 +97,17 @@ Cuatro perspectivas, leídas en el mapa de arriba hacia abajo, con las áreas re
   por excepción: el verde que se está apagando. La banda ejecutiva muestra además el
   **delta de salud global** vs el periodo anterior y el conteo de críticos / en riesgo /
   alertas tempranas.
+- **RF-15 · Cumplimiento financiero vs Business Plan.** Panel prioritario bajo la banda
+  ejecutiva (`DATA.bp`) con las 4 métricas del resultado: **Venta (cierre de negocios)**,
+  **Facturación**, **Margen bruto** y **EBITDA** (destacado como ★ *salud financiera del
+  negocio*, con margen % como subdato). Cada métrica compara: **mes actual vs plan**,
+  **YTD vs plan** (ambos con % de cumplimiento a 1 decimal y semáforo) y **mes / YTD vs
+  año anterior** (crecimiento % para montos, puntos para porcentajes). La banda ejecutiva
+  incluye un stat permanente de EBITDA (margen YTD, monto, % del plan y variación vs año
+  anterior). El chat responde "¿cómo vamos vs el business plan?" y menciones de
+  facturación/venta/margen (`ansBP`), y el resumen ejecutivo incorpora el bloque
+  financiero. Coherencia de datos: facturación YTD 96,2% del plan (= KPI "Ingresos vs
+  presupuesto") y margen EBITDA YTD 12,8% vs 14%.
 
 ### Preguntas de ejemplo (sugeridas en el chat)
 

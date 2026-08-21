@@ -19,6 +19,10 @@ Pensado para un **CEO**: la primera pantalla es simple y accionable.
   críticos / en riesgo / alertas tempranas, + las 4 perspectivas BSC (Financiera, Clientes,
   Procesos, Aprendizaje) con semáforo, y los **cuellos de botella** destacados (dos frentes
   críticos: servicio/First-Time-Fix y comercial/preventa).
+- **💰 Venta y resultado vs Business Plan** — Venta (cierre de negocios), Facturación,
+  Margen bruto y **EBITDA** (★ la salud financiera del negocio): mes actual vs plan,
+  acumulado **YTD vs plan** y comparación **vs año anterior**, con semáforo por
+  cumplimiento. La banda ejecutiva muestra el EBITDA de forma permanente.
 - **📉 Alertas tempranas** — indicadores **aún en meta pero empeorando** (el verde que se
   está apagando), con los periodos consecutivos sin mejora.
 - **💬 Chat "Pregúntale a tus datos"** — asistente conversacional **local** (sin backend)
