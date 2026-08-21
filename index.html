@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tecnodata S.A. · Dashboard Gerencia General</title>
+  <meta name="description" content="Dashboard de ejemplo para la Gerencia General de Tecnodata S.A. (Techno Global).">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="assets/logo.svg" alt="Tecnodata S.A." class="brand-logo">
+    </div>
+    <nav class="nav">
+      <a class="nav-item is-active" href="#"><span class="nav-ico">▤</span> Resumen</a>
+      <a class="nav-item" href="#"><span class="nav-ico">📈</span> Ventas</a>
+      <a class="nav-item" href="#"><span class="nav-ico">🛠️</span> Servicios</a>
+      <a class="nav-item" href="#"><span class="nav-ico">🎫</span> Tickets</a>
+      <a class="nav-item" href="#"><span class="nav-ico">🏪</span> Tienda</a>
+      <a class="nav-item" href="#"><span class="nav-ico">👥</span> Clientes</a>
+      <a class="nav-item" href="#"><span class="nav-ico">⚙️</span> Configuración</a>
+    </nav>
+    <div class="sidebar-foot">
+      <p>Gerencia General</p>
+      <p class="muted">v0.1 · ejemplo</p>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Techno Global</p>
+        <h1>Dashboard — Gerencia General</h1>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary">🎫 Ticket Servicios</button>
+        <button class="btn btn-primary">🏪 Tienda</button>
+        <div class="avatar" title="Gerente General">GG</div>
+      </div>
+    </header>
+
+    <!-- ===== KPIs ===== -->
+    <section class="kpi-grid" aria-label="Indicadores clave">
+      <article class="card kpi">
+        <p class="kpi-label">Ventas del mes</p>
+        <p class="kpi-value">$ 84.320.000</p>
+        <p class="kpi-delta up">▲ 12,4% vs mes anterior</p>
+      </article>
+      <article class="card kpi">
+        <p class="kpi-label">Tickets abiertos</p>
+        <p class="kpi-value">37</p>
+        <p class="kpi-delta down">▼ 8 respecto a ayer</p>
+      </article>
+      <article class="card kpi">
+        <p class="kpi-label">Clientes activos</p>
+        <p class="kpi-value">1.248</p>
+        <p class="kpi-delta up">▲ 3,1% este trimestre</p>
+      </article>
+      <article class="card kpi">
+        <p class="kpi-label">SLA cumplido</p>
+        <p class="kpi-value">96,7%</p>
+        <p class="kpi-delta up">▲ 1,2 pts</p>
+      </article>
+    </section>
+
+    <!-- ===== Contenido principal ===== -->
+    <section class="content-grid">
+      <!-- Gráfico de ventas -->
+      <article class="card chart-card">
+        <div class="card-head">
+          <h2>Ventas por mes</h2>
+          <span class="muted">Últimos 8 meses (M$)</span>
+        </div>
+        <svg class="bars" viewBox="0 0 640 260" preserveAspectRatio="xMidYMid meet" aria-label="Gráfico de ventas por mes">
+          <!-- Ejes -->
+          <line x1="40" y1="220" x2="620" y2="220" stroke="#2a2a2a" stroke-width="1"/>
+          <!-- Barras (se rellenan por JS con animación) -->
+          <g class="bars-group" data-values="52,58,49,63,71,66,78,84"
+             data-labels="Ene,Feb,Mar,Abr,May,Jun,Jul,Ago"></g>
+        </svg>
+      </article>
+
+      <!-- Tarjetas SENAPRED (dos tonos teal) -->
+      <div class="senapred-stack">
+        <article class="card senapred senapred-top">
+          <div class="senapred-head">
+            <span class="badge">SENAPRED</span>
+            <span class="dot dot-ok" title="Operativo"></span>
+          </div>
+          <h3>Alertas activas</h3>
+          <p class="big-num">2</p>
+          <p class="muted">Regiones monitoreadas: 16</p>
+        </article>
+        <article class="card senapred senapred-bottom">
+          <div class="senapred-head">
+            <span class="badge">SENAPRED</span>
+            <span class="dot dot-warn" title="En revisión"></span>
+          </div>
+          <h3>Reportes del día</h3>
+          <p class="big-num">14</p>
+          <p class="muted">Último: hace 12 min</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ===== Tabla de actividad ===== -->
+    <section class="card table-card">
+      <div class="card-head">
+        <h2>Actividad reciente</h2>
+        <span class="muted">Tiempo real</span>
+      </div>
+      <table class="table">
+        <thead>
+          <tr><th>Hora</th><th>Módulo</th><th>Detalle</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>10:42</td><td>Tickets</td><td>Nuevo ticket de servicio #4821</td><td><span class="pill pill-open">Abierto</span></td></tr>
+          <tr><td>10:18</td><td>Tienda</td><td>Orden #A-1093 procesada</td><td><span class="pill pill-ok">Completado</span></td></tr>
+          <tr><td>09:57</td><td>SENAPRED</td><td>Alerta temprana región Biobío</td><td><span class="pill pill-warn">Revisión</span></td></tr>
+          <tr><td>09:30</td><td>Ventas</td><td>Cotización aprobada · $ 3.200.000</td><td><span class="pill pill-ok">Completado</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer class="footer">
+      <span>© <span id="year"></span> Tecnodata S.A. · Techno Global</span>
+      <span class="muted">Dashboard de ejemplo — datos ficticios</span>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+/* ===========================================================
+   Tecnodata S.A. — Dashboard Gerencia General
+   Paleta:
+     Negro           #000000  -> Fondo del sitio
+     Azul periwinkle #97B4DE  -> Botones (Ticket Servicios / Tienda)
+     Teal profundo   #274B63  -> Tarjeta SENAPRED (superior)
+     Teal verdoso    #1E4B48  -> Tarjeta SENAPRED (inferior)
+     Blanco          #FFFFFF  -> Tipografía sobre fondos oscuros
+   =========================================================== */
+
+:root {
+  --black:        #000000;
+  --periwinkle:   #97B4DE;
+  --teal-deep:    #274B63;
+  --teal-green:   #1E4B48;
+  --white:        #FFFFFF;
+
+  /* Derivados para superficies del tema oscuro */
+  --surface:      #0e0f12;
+  --surface-2:    #15171c;
+  --border:       #23262e;
+  --muted:        #8b93a7;
+  --up:           #6fd3a2;
+  --down:         #f08a8a;
+
+  --radius:       16px;
+  --shadow:       0 8px 24px rgba(0,0,0,.45);
+  --font:         'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+  background: var(--black);
+  color: var(--white);
+  font-family: var(--font);
+  line-height: 1.5;
+}
+
+.muted { color: var(--muted); font-size: .85rem; }
+
+/* ===================== SIDEBAR ===================== */
+.sidebar {
+  background: linear-gradient(180deg, #050507 0%, #000 100%);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 22px 16px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+.brand { padding: 6px 8px 22px; }
+.brand-logo { width: 100%; max-width: 200px; height: auto; display: block; }
+
+.nav { display: flex; flex-direction: column; gap: 4px; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px; border-radius: 10px;
+  color: #cfd4e0; text-decoration: none; font-size: .95rem;
+  transition: background .15s, color .15s;
+}
+.nav-item:hover { background: var(--surface-2); color: var(--white); }
+.nav-item.is-active {
+  background: rgba(151,180,222,.14);
+  color: var(--white);
+  border-left: 3px solid var(--periwinkle);
+}
+.nav-ico { width: 20px; text-align: center; }
+
+.sidebar-foot { margin-top: auto; padding: 14px 10px 4px; font-size: .82rem; color: #aeb4c2; }
+
+/* ===================== MAIN ===================== */
+.main { padding: 26px 30px 40px; }
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap; margin-bottom: 26px;
+}
+.eyebrow {
+  color: var(--periwinkle); font-size: .78rem; font-weight: 600;
+  letter-spacing: .14em; text-transform: uppercase;
+}
+.topbar h1 { font-size: 1.6rem; font-weight: 700; }
+
+.topbar-actions { display: flex; align-items: center; gap: 12px; }
+
+.btn {
+  border: none; cursor: pointer; border-radius: 10px;
+  padding: 11px 16px; font-size: .92rem; font-weight: 600;
+  font-family: inherit; transition: transform .1s, filter .15s;
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary {
+  background: var(--periwinkle);
+  color: #0c1a2b;
+}
+.btn-primary:hover { filter: brightness(1.08); }
+
+.avatar {
+  width: 42px; height: 42px; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 700; font-size: .9rem;
+  background: linear-gradient(135deg, var(--teal-deep), var(--teal-green));
+  color: var(--white); border: 1px solid var(--border);
+}
+
+/* ===================== CARDS ===================== */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+.card-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 16px; gap: 10px;
+}
+.card-head h2 { font-size: 1.05rem; font-weight: 600; }
+
+/* KPIs */
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 18px; margin-bottom: 22px;
+}
+.kpi-label { color: var(--muted); font-size: .85rem; margin-bottom: 8px; }
+.kpi-value { font-size: 1.7rem; font-weight: 700; letter-spacing: -.01em; }
+.kpi-delta { font-size: .82rem; margin-top: 8px; }
+.kpi-delta.up { color: var(--up); }
+.kpi-delta.down { color: var(--down); }
+
+/* Layout de contenido */
+.content-grid {
+  display: grid; grid-template-columns: 2fr 1fr;
+  gap: 18px; margin-bottom: 22px;
+}
+
+/* Gráfico */
+.chart-card .bars { width: 100%; height: auto; }
+.bar-rect { fill: var(--periwinkle); transition: height .6s ease, y .6s ease; }
+.bar-rect:hover { fill: #b9cdec; }
+.bar-label { fill: var(--muted); font-size: 13px; }
+.bar-value { fill: var(--white); font-size: 12px; font-weight: 600; }
+
+/* Tarjetas SENAPRED */
+.senapred-stack { display: grid; grid-template-rows: 1fr 1fr; gap: 18px; }
+.senapred { border: 1px solid rgba(255,255,255,.08); }
+.senapred-top    { background: linear-gradient(160deg, var(--teal-deep) 0%, #1c384a 100%); }
+.senapred-bottom { background: linear-gradient(160deg, var(--teal-green) 0%, #14332f 100%); }
+.senapred-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.senapred h3 { font-size: .95rem; font-weight: 500; color: #dfe7ef; }
+.senapred .big-num { font-size: 2.4rem; font-weight: 700; margin: 4px 0; }
+.senapred .muted { color: rgba(255,255,255,.7); }
+.badge {
+  font-size: .68rem; font-weight: 700; letter-spacing: .1em;
+  background: rgba(255,255,255,.14); color: var(--white);
+  padding: 3px 9px; border-radius: 999px;
+}
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.dot-ok   { background: var(--up);  box-shadow: 0 0 8px var(--up); }
+.dot-warn { background: #e8c26a; box-shadow: 0 0 8px #e8c26a; }
+
+/* Tabla */
+.table-card { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.table th, .table td { text-align: left; padding: 12px 14px; }
+.table thead th { color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); }
+.table tbody tr { border-bottom: 1px solid #1a1c22; }
+.table tbody tr:hover { background: var(--surface-2); }
+.pill { font-size: .74rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; }
+.pill-open { background: rgba(151,180,222,.18); color: var(--periwinkle); }
+.pill-ok   { background: rgba(111,211,162,.16); color: var(--up); }
+.pill-warn { background: rgba(232,194,106,.16); color: #e8c26a; }
+
+/* Footer */
+.footer {
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  margin-top: 26px; padding-top: 16px;
+  border-top: 1px solid var(--border); font-size: .82rem; color: var(--muted);
+}
+
+/* ===================== RESPONSIVE ===================== */
+@media (max-width: 1000px) {
+  body { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; flex-direction: row; align-items: center; flex-wrap: wrap; }
+  .sidebar .nav { flex-direction: row; flex-wrap: wrap; }
+  .sidebar-foot { display: none; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .content-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .main { padding: 18px; }
+}
