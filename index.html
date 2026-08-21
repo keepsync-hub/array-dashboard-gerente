@@ -37,74 +37,104 @@
     <header class="topbar">
       <div>
         <p class="eyebrow">Tecnodata S.A. · Gerencia País</p>
-        <h1>Cuadro de Mando Integral — 360°</h1>
+        <h1>Tablero Ejecutivo — 360°</h1>
         <p class="period muted" id="periodo"></p>
       </div>
       <div class="topbar-actions">
-        <div class="avatar" title="Country Manager">CM</div>
+        <div class="avatar" title="CEO">CEO</div>
       </div>
     </header>
+
+    <!-- ===== Banda ejecutiva: salud del negocio ===== -->
+    <section class="exec">
+      <div class="exec-health">
+        <span class="exec-h-label">Salud del negocio</span>
+        <span class="exec-h-value" id="exec-global"><!-- JS --></span>
+      </div>
+      <div class="exec-persps" id="exec-persps"><!-- JS --></div>
+    </section>
 
     <!-- ===== Diagnóstico / cuello de botella ===== -->
     <div class="diagnostico" id="diagnostico"><!-- JS --></div>
 
-    <!-- ===== Pulso ejecutivo (1 KPI por perspectiva) ===== -->
-    <section class="kpi-grid" id="pulso" aria-label="Pulso ejecutivo por perspectiva BSC"><!-- JS --></section>
-
-    <!-- ===== Mapa estratégico + Matriz 360° ===== -->
-    <section class="content-grid">
-      <article class="card map-card">
-        <div class="card-head">
-          <h2>Mapa estratégico &amp; cadenas de impacto</h2>
-          <span class="muted">Financiera ← Clientes ← Procesos ← Aprendizaje</span>
+    <!-- ===== CHAT: Pregúntale a tus datos (protagonista) ===== -->
+    <section class="card chat-card" aria-label="Chat de diagnóstico">
+      <div class="card-head chat-head">
+        <div>
+          <h2>💬 Pregúntale a tus datos</h2>
+          <span class="muted">Diagnóstico de cuellos de botella y oportunidades de mejora</span>
         </div>
-        <div class="smap-host" id="smap"><!-- SVG (JS) --></div>
-        <p class="map-hint muted">Las flechas de color muestran cómo una brecha se propaga entre perspectivas. Clic en un indicador para aislar su cadena.</p>
-      </article>
+      </div>
+      <div class="chat-log" id="chat-log"><!-- conversación (JS) --></div>
+      <div class="chat-suggest" id="chat-suggest"><!-- sugerencias (JS) --></div>
+      <form class="chat-input" id="chat-form" autocomplete="off">
+        <input id="chat-text" type="text" placeholder="Escribe tu pregunta…  p. ej. ¿Cuál es el principal cuello de botella?" aria-label="Tu pregunta">
+        <button type="submit" class="btn btn-primary">Preguntar</button>
+      </form>
+    </section>
 
-      <article class="card matrix-card">
+    <!-- ===== Análisis detallado (desplegable) ===== -->
+    <details class="detalle">
+      <summary>
+        <span class="det-title">📊 Ver análisis detallado</span>
+        <span class="muted det-sub">Mapa estratégico, matriz 360°, brechas e indicadores</span>
+      </summary>
+
+      <section class="kpi-grid" id="pulso" aria-label="Indicadores titulares por perspectiva BSC"><!-- JS --></section>
+
+      <section class="content-grid">
+        <article class="card map-card">
+          <div class="card-head">
+            <h2>Mapa estratégico &amp; cadenas de impacto</h2>
+            <span class="muted">Financiera ← Clientes ← Procesos ← Aprendizaje</span>
+          </div>
+          <div class="smap-host" id="smap"><!-- SVG (JS) --></div>
+          <p class="map-hint muted">Las flechas de color muestran cómo una brecha se propaga entre perspectivas. Clic en un indicador para aislar su cadena.</p>
+        </article>
+
+        <article class="card matrix-card">
+          <div class="card-head">
+            <h2>Matriz de salud 360°</h2>
+            <span class="muted">Áreas × perspectivas</span>
+          </div>
+          <div class="matrix-host" id="matrix"><!-- tabla (JS) --></div>
+          <p class="map-hint muted">Clic en una fila para ver el detalle de indicadores del área.</p>
+        </article>
+      </section>
+
+      <section class="card brechas-card">
         <div class="card-head">
-          <h2>Matriz de salud 360°</h2>
-          <span class="muted">Áreas × perspectivas</span>
+          <h2>Brechas prioritarias &amp; impacto sistémico</h2>
+          <span class="muted">Gestión por excepción · peor primero</span>
         </div>
-        <div class="matrix-host" id="matrix"><!-- tabla (JS) --></div>
-        <p class="map-hint muted">Clic en una fila para ver el detalle de indicadores del área.</p>
-      </article>
-    </section>
+        <div class="brechas" id="brechas"><!-- JS --></div>
+      </section>
 
-    <!-- ===== Brechas y cadenas de impacto ===== -->
-    <section class="card brechas-card">
-      <div class="card-head">
-        <h2>Brechas prioritarias &amp; impacto sistémico</h2>
-        <span class="muted">Gestión por excepción · peor primero</span>
-      </div>
-      <div class="brechas" id="brechas"><!-- JS --></div>
-    </section>
-
-    <!-- ===== Leyenda de fuentes ===== -->
-    <section class="card sources-card">
-      <div class="card-head">
-        <h2>Origen de los datos (simulado)</h2>
-        <span class="muted">Cada indicador se alimenta de su sistema fuente</span>
-      </div>
-      <div class="sources">
-        <div class="source"><span class="src-tag">CRM</span> Ventas, marketing y clientes — <span class="muted">Salesforce / Dynamics</span></div>
-        <div class="source"><span class="src-tag">CRM · CPQ</span> Preventa: propuestas y POCs — <span class="muted">Configurador (CPQ)</span></div>
-        <div class="source"><span class="src-tag">ERP</span> Finanzas y logística — <span class="muted">SAP / Oracle</span></div>
-        <div class="source"><span class="src-tag">ITSM / FSM</span> Servicio técnico (ITIL + terreno) — <span class="muted">ServiceNow</span></div>
-        <div class="source"><span class="src-tag">HRIS</span> Personas: rotación, capacitación, eNPS — <span class="muted">Workday / BUK</span></div>
-        <div class="source"><span class="src-tag">CX</span> NPS — <span class="muted">Qualtrics / Medallia</span></div>
-        <div class="source"><span class="src-tag">Mercado</span> Market share — <span class="muted">Estudio externo</span></div>
-      </div>
-    </section>
+      <section class="card sources-card">
+        <div class="card-head">
+          <h2>Origen de los datos (simulado)</h2>
+          <span class="muted">Cada indicador se alimenta de su sistema fuente</span>
+        </div>
+        <div class="sources">
+          <div class="source"><span class="src-tag">CRM</span> Ventas, marketing y clientes — <span class="muted">Salesforce / Dynamics</span></div>
+          <div class="source"><span class="src-tag">CRM · CPQ</span> Preventa: propuestas y POCs — <span class="muted">Configurador (CPQ)</span></div>
+          <div class="source"><span class="src-tag">ERP</span> Finanzas y logística — <span class="muted">SAP / Oracle</span></div>
+          <div class="source"><span class="src-tag">ITSM / FSM</span> Servicio técnico (ITIL + terreno) — <span class="muted">ServiceNow</span></div>
+          <div class="source"><span class="src-tag">HRIS</span> Personas: rotación, capacitación, eNPS — <span class="muted">Workday / BUK</span></div>
+          <div class="source"><span class="src-tag">CX</span> NPS — <span class="muted">Qualtrics / Medallia</span></div>
+          <div class="source"><span class="src-tag">Mercado</span> Market share — <span class="muted">Estudio externo</span></div>
+        </div>
+      </section>
+    </details>
 
     <footer class="footer">
-      <span>© <span id="year"></span> Tecnodata S.A. — Cockpit BSC 360°</span>
+      <span>© <span id="year"></span> Tecnodata S.A. — Tablero Ejecutivo BSC 360°</span>
       <span class="muted">Balanced Scorecard · datos ficticios de demostración</span>
     </footer>
   </main>
 
   <script src="data.js"></script>
   <script src="app.js"></script>
+  <script src="chat.js"></script>
 </body>
 </html>

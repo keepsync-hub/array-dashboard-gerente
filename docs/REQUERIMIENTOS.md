@@ -70,6 +70,28 @@ Cuatro perspectivas, leídas en el mapa de arriba hacia abajo, con las áreas re
   agregados son promedios de cumplimiento.
 - **RF-10 · Origen del dato por indicador.** Cada KPI declara su `fuente`; se muestra en
   tooltips, en el detalle de la matriz y en la leyenda de fuentes del pie.
+- **RF-11 · Vista CEO (simplificada).** La primera pantalla está pensada para el CEO:
+  una **banda de salud del negocio** (salud global + las 4 perspectivas BSC con semáforo),
+  el **cuello de botella** destacado, y el **chat** como elemento central. El análisis
+  denso (mapa estratégico, matriz, brechas, fuentes) queda en un desplegable "Ver análisis
+  detallado", colapsado por defecto.
+- **RF-12 · Chat "Pregúntale a tus datos".** Asistente conversacional **100% local** (sin
+  backend ni llamadas externas; funciona en GitHub Pages) que interpreta preguntas en
+  lenguaje natural y responde con un diagnóstico construido sobre el grafo causal y los
+  helpers de datos. Intenciones soportadas: resumen ejecutivo, cuello de botella,
+  oportunidades/prioridades (con quick win), causas de un problema ("¿por qué cae X?"),
+  impacto de una mejora ("¿qué pasa si mejoro X?"), estado de un área, de una perspectiva o
+  de un indicador, y origen de los datos. Al abrir muestra un mensaje de bienvenida con el
+  diagnóstico actual y **preguntas sugeridas** clicables. Motor en `chat.js`.
+
+### Preguntas de ejemplo (sugeridas en el chat)
+
+- ¿Cuál es el principal cuello de botella?
+- ¿Dónde están mis mayores oportunidades de mejora?
+- ¿Por qué cae el EBITDA?
+- ¿Cómo va el área de Ventas?
+- Dame un resumen ejecutivo del negocio.
+- ¿Qué impacto tiene mejorar la preventa?
 
 ## 4. Catálogo de indicadores (datos simulados) con fuente
 
@@ -149,10 +171,11 @@ dirigido KPI-a-KPI declarado en `data.js`. Escenarios modelados:
 ### Estructura de archivos
 
 ```
-index.html   Estructura de la vista única (contenedores que llena el JS)
+index.html   Estructura de la vista (banda ejecutiva, chat y detalle desplegable)
 styles.css   Estilos, tokens de marca y semáforo, responsive
 data.js      DATA (KPIs, grafo de impacto, fuentes) + helpers puros  ← EDITAR AQUÍ
-app.js       Render del pulso, mapa estratégico, matriz y brechas (SVG puro)
+app.js       Render de la banda ejecutiva, pulso, mapa, matriz y brechas (SVG puro)
+chat.js      Motor local del chat "Pregúntale a tus datos" (Q&A + diagnóstico)
 docs/REQUERIMIENTOS.md   Este documento
 assets/logo.png          Logo Tecnodata S.A.
 ```

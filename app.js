@@ -441,10 +441,37 @@ function syncSidebar() {
   });
 }
 
+/* ============================ Banda ejecutiva (CEO) ============================ */
+function renderExecBand() {
+  // Salud global
+  const gEl = document.getElementById('exec-global');
+  if (gEl) {
+    const g = avgAttainment(DATA.kpis);
+    const st = statusFromScore(g);
+    clear(gEl);
+    gEl.appendChild(makeDot(st));
+    gEl.appendChild(el('span', { class: 'exec-h-num', text: Math.round(g * 100) + '%' }));
+  }
+  // Chips por perspectiva
+  const pWrap = document.getElementById('exec-persps');
+  if (pWrap) {
+    clear(pWrap);
+    DATA.perspectivas.forEach(p => {
+      const s = avgAttainment(kpisByPerspectiva(p.id));
+      const st = statusFromScore(s);
+      pWrap.appendChild(el('div', { class: 'exec-chip chip-tone-' + statusClass(st) }, [
+        el('span', { class: 'exec-chip-name', text: p.nombre }),
+        el('span', { class: 'exec-chip-val' }, [makeDot(st), el('span', { text: Math.round(s * 100) + '%' })])
+      ]));
+    });
+  }
+}
+
 /* ============================ Orquestación ============================ */
 function renderAll() {
-  renderPulso();
+  renderExecBand();
   renderDiagnostico();
+  renderPulso();
   renderStrategyMap();
   renderMatrix();
   renderBrechas();
@@ -461,4 +488,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // botella señalado). El foco sobre una cadena se activa al hacer clic.
   STATE.chain = null;
   renderAll();
+
+  // Chat "Pregúntale a tus datos" (motor local en chat.js)
+  if (typeof CEOChat !== 'undefined') CEOChat.init();
 });
