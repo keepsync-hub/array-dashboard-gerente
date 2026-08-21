@@ -86,12 +86,13 @@ Cuatro perspectivas, leídas en el mapa de arriba hacia abajo, con las áreas re
 
 ### Preguntas de ejemplo (sugeridas en el chat)
 
-- ¿Cuál es el principal cuello de botella?
+- ¿Cuáles son los cuellos de botella?
+- ¿Por qué está bajo el First-Time-Fix?
+- ¿Qué impacto tiene mejorar la resolución remota?
+- ¿Cómo va Servicio Técnico?
 - ¿Dónde están mis mayores oportunidades de mejora?
-- ¿Por qué cae el EBITDA?
-- ¿Cómo va el área de Ventas?
 - Dame un resumen ejecutivo del negocio.
-- ¿Qué impacto tiene mejorar la preventa?
+- ¿Por qué cae el EBITDA? · ¿Qué impacto tiene mejorar la preventa?
 
 ## 4. Catálogo de indicadores (datos simulados) con fuente
 
@@ -101,13 +102,15 @@ Cuatro perspectivas, leídas en el mapa de arriba hacia abajo, con las áreas re
 | Financiera | Ingresos recurrentes (contratos) | Finanzas | 68 / 70 % | ↑ | ERP |
 | Financiera | Margen EBITDA | Finanzas | 12,8 / 14 % | ↑ | ERP |
 | Financiera | DSO (días de cobro) | Finanzas | 62 / 55 días | ↓ | ERP |
+| Financiera | **Costo de servicio en terreno** (% del presupuesto) | Servicio | 122 / 100 % | ↓ | ERP |
 | Clientes | NPS | Marketing | 54 / 60 pts | ↑ | CX/Encuestas |
 | Clientes | Renovación de contratos | Ventas | 91 / 93 % | ↑ | CRM |
 | Clientes | Market share | Marketing | 23,4 / 25 % | ↑ | Estudio mercado |
 | Clientes | Clientes nuevos (trimestre) | Ventas | 18 / 20 | ↑ | CRM |
-| Procesos | Cumplimiento SLA | Servicio | 96,7 / 97 % | ↑ | ITSM |
+| Procesos | Cumplimiento SLA | Servicio | 90,2 / 97 % | ↑ | ITSM |
 | Procesos | Uptime parque instalado | Servicio | 98,1 / 98,5 % | ↑ | FSM |
-| Procesos | First-time-fix | Servicio | 82 / 85 % | ↑ | FSM |
+| Procesos | **First-time-fix** | Servicio | 72 / 85 % | ↑ | FSM |
+| Procesos | **Resolución remota (sin visita)** | Servicio | 38 / 60 % | ↑ | ITSM |
 | Procesos | Tiempo respuesta técnico | Servicio | 4,6 / 4,0 h | ↓ | ITSM |
 | Procesos | OTIF entregas | Logística | 93 / 95 % | ↑ | ERP |
 | Procesos | Rotación de inventario | Logística | 5,2 / 6 x/año | ↑ | ERP |
@@ -160,6 +163,20 @@ dirigido KPI-a-KPI declarado en `data.js`. Escenarios modelados:
    las oportunidades se enfrían o las gana quien respondió antes → cae conversión y
    productividad → incumple presupuesto → cae EBITDA. Aguas arriba, la certificación de
    preingenieros y la adopción de herramientas alimentan el tiempo y la calidad de preventa.
+8. **Servicio post-venta — First-Time-Fix y resolución remota (segundo frente crítico):**
+   la **baja resolución remota** (no se diagnostica el problema antes de despachar) hace que
+   el técnico llegue sin el problema acotado y repare por **prueba y error** — agravado por
+   el **desconocimiento técnico** (baja certificación/capacitación) → **cae el First-Time-Fix**
+   (múltiples visitas por caso). Esto **satura la capacidad de terreno**, **incumple el SLA**,
+   deteriora el **NPS** y la **renovación de contratos** (→ ingresos recurrentes → EBITDA), y
+   además **encarece el servicio** (más visitas en terreno = mayor **costo de servicio** →
+   presiona el EBITDA). **Palanca:** potenciar la **resolución remota** (diagnóstico previo +
+   herramientas FSM + certificación) para evitar visitas, subir FTF/SLA y bajar costo.
+
+> **Dos frentes críticos.** El diagnóstico, el mapa y el chat presentan simultáneamente los
+> dos cuellos de botella de mayor impacto y de cadenas distintas: **operativo/servicio**
+> (resolución remota → FTF) y **comercial** (preventa). El helper `bottlenecks(n)` los
+> selecciona de forma "greedy" evitando que ambos pertenezcan a la misma cadena.
 
 ## 6. Arquitectura (requisitos no funcionales)
 
