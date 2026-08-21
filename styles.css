@@ -333,8 +333,11 @@ body {
 
 /* ===================== RESPONSIVE ===================== */
 @media (max-width: 1000px) {
-  body { grid-template-columns: 1fr; }
-  .sidebar { position: static; height: auto; flex-direction: column; }
+  /* Fuera del grid: sidebar y main fluyen como bloques apilados y toman su
+     altura de contenido (en grid, la fila del sidebar colapsaba y el
+     encabezado del main quedaba encima del logo). */
+  body { display: block; }
+  .sidebar { position: static; height: auto; min-height: 0; overflow: visible; flex-direction: column; }
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .content-grid { grid-template-columns: 1fr; }
   .sources { grid-template-columns: 1fr; }
