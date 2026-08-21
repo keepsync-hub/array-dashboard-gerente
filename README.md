@@ -13,16 +13,24 @@ Sitio estático (HTML + CSS + JS, **sin dependencias externas**). Datos **fictic
 
 ## 🧭 Qué muestra
 
-- **Pulso ejecutivo** — 1 KPI titular por perspectiva BSC (Financiera, Clientes, Procesos,
-  Aprendizaje) con semáforo, delta y tendencia.
-- **Mapa estratégico & cadenas de impacto** — 4 niveles del BSC con hilo conductor causal;
-  las flechas de color trazan cómo una brecha se propaga entre perspectivas. Al cargar
-  enfoca la cadena del **cuello de botella** (⛔). Clic en un indicador aísla su cadena.
-- **Matriz de salud 360°** — áreas × perspectivas, con salud por fila/columna, marca de
-  *riesgo importado* y detalle inline de indicadores por área (con su fuente de dato).
-- **Brechas prioritarias** — gestión por excepción, peor primero, con su cadena de impacto.
-- **Origen de los datos** — cada indicador declara su sistema fuente simulado (CRM, ERP,
-  ITSM/FSM, HRIS, CX…).
+Pensado para un **CEO**: la primera pantalla es simple y accionable.
+
+- **Salud del negocio** — salud global + las 4 perspectivas BSC (Financiera, Clientes,
+  Procesos, Aprendizaje) con semáforo, y el **cuello de botella** destacado.
+- **💬 Chat "Pregúntale a tus datos"** — asistente conversacional **local** (sin backend)
+  que responde preguntas sobre el negocio con un diagnóstico: cuellos de botella, causas,
+  impacto de mejoras y oportunidades priorizadas. Trae preguntas de ejemplo sugeridas.
+- **📊 Análisis detallado (desplegable)** — para quien quiere profundizar:
+  - **Mapa estratégico & cadenas de impacto** — 4 niveles del BSC con hilo conductor causal;
+    las flechas trazan cómo una brecha se propaga. Enfoca la cadena del cuello de botella (⛔).
+  - **Matriz de salud 360°** — áreas × perspectivas, con *riesgo importado* y detalle por área.
+  - **Brechas prioritarias** — gestión por excepción con su cadena de impacto.
+  - **Origen de los datos** — sistema fuente simulado de cada indicador (CRM, ERP, ITSM/FSM, HRIS, CX…).
+
+### Ejemplos de preguntas al chat
+
+> ¿Cuál es el principal cuello de botella? · ¿Dónde están mis mayores oportunidades? ·
+> ¿Por qué cae el EBITDA? · ¿Cómo va Ventas? · Resumen ejecutivo · ¿Qué impacto tiene mejorar la preventa?
 
 ## ✏️ Editar indicadores
 
@@ -45,10 +53,11 @@ Tema **oscuro**, en línea con la marca Tecnodata S.A.
 ## 📁 Estructura
 
 ```
-index.html                    Estructura de la vista única (la llena el JS)
+index.html                    Vista CEO (banda ejecutiva, chat) + análisis detallado
 styles.css                    Estilos, tokens de marca y semáforo, responsive
 data.js                       DATA (KPIs, grafo de impacto, fuentes) + helpers  ← EDITAR AQUÍ
-app.js                        Render del pulso, mapa, matriz y brechas (SVG puro)
+app.js                        Render de banda ejecutiva, mapa, matriz y brechas (SVG puro)
+chat.js                       Motor local del chat "Pregúntale a tus datos"
 docs/REQUERIMIENTOS.md        Documento de requerimiento funcional (FRD)
 assets/logo.png               Logo oficial Tecnodata S.A.
 .github/workflows/deploy-pages.yml   Publicación en GitHub Pages
