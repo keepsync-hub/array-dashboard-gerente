@@ -1,6 +1,6 @@
 # array-dashboard-gerente
 
-Dashboard de ejemplo para la **Gerencia General de Tecnodata S.A. (Techno Global)**.
+Dashboard de ejemplo para la **Gerencia General de Tecnodata S.A.**
 
 Sitio estático (HTML + CSS + JS, sin dependencias externas) pensado como punto de
 partida para construir el panel gerencial.
@@ -23,7 +23,7 @@ El tema es **oscuro / negro**, en línea con el logo de Tecnodata S.A.
 index.html                    Página del dashboard
 styles.css                    Estilos y paleta
 app.js                        Gráfico de barras (SVG) e interacciones
-assets/logo.svg               Logo Tecnodata S.A. (recreación vectorial)
+assets/logo.png               Logo oficial Tecnodata S.A.
 .github/workflows/deploy-pages.yml   Publicación en GitHub Pages
 ```
 
@@ -38,7 +38,7 @@ python3 -m http.server 8000
 
 ## 🔄 Flujo de publicación (PR → Merge → GitHub Pages)
 
-1. Se desarrolla en la rama `claude/techno-global-dashboard-*`.
+1. Se desarrolla en una rama de trabajo (`claude/...`).
 2. Se abre un **Pull Request** hacia `main`.
 3. Al hacer **Merge** a `main`, el workflow `Deploy Dashboard to GitHub Pages`
    se ejecuta automáticamente y publica el sitio.
