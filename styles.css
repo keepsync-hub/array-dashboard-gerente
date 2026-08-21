@@ -133,6 +133,36 @@ body {
 .diag-item strong { color: var(--white); }
 .diag-item em { color: #ffd9d8; font-style: normal; font-weight: 600; }
 
+/* ===================== BOTONES ===================== */
+.btn {
+  font-family: inherit; font-size: .9rem; font-weight: 600; cursor: pointer;
+  background: var(--surface-3); color: var(--white);
+  border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px;
+  transition: border-color .15s, background .15s, color .15s;
+}
+.btn:hover { border-color: var(--periwinkle); }
+.btn-primary {
+  background: var(--periwinkle); color: #0c1a2b; border-color: var(--periwinkle);
+}
+.btn-primary:hover { background: #aac3e6; }
+
+/* ===================== ALERTAS TEMPRANAS ===================== */
+.alertas {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px;
+  background: linear-gradient(90deg, rgba(232,194,106,.12), rgba(232,194,106,.03));
+  border: 1px solid rgba(232,194,106,.35);
+  border-radius: 12px; padding: 12px 16px; margin-bottom: 20px;
+}
+.alertas-badge {
+  font-size: .74rem; font-weight: 700; letter-spacing: .04em;
+  background: var(--warn); color: #2b2108; padding: 5px 11px; border-radius: 999px;
+  white-space: nowrap;
+}
+.alertas-list { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.alerta-item { font-size: .88rem; color: #f0e4c8; }
+.alerta-item b { color: var(--white); font-weight: 600; }
+.alertas-hint { font-size: .76rem; margin-left: auto; }
+
 /* ===================== CARDS ===================== */
 .card {
   background: var(--surface);
@@ -343,7 +373,7 @@ body {
 }
 .exec-health { display: flex; align-items: baseline; gap: 12px; }
 .exec-h-label { font-size: .82rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
-.exec-h-value { display: inline-flex; align-items: center; gap: 10px; }
+.exec-h-value { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
 .exec-h-num { font-size: 2rem; font-weight: 800; letter-spacing: -.02em; }
 .exec-persps { display: flex; gap: 10px; flex-wrap: wrap; }
 .exec-chip {
@@ -356,6 +386,35 @@ body {
 .exec-chip.chip-tone-ok   { border-color: rgba(111,211,162,.4); }
 .exec-chip.chip-tone-warn { border-color: rgba(232,194,106,.45); }
 .exec-chip.chip-tone-bad  { border-color: rgba(240,113,111,.5); }
+.exec-h-delta { font-size: .82rem; font-weight: 600; white-space: nowrap; }
+.exec-h-delta.up { color: var(--up); }
+.exec-h-delta.down { color: var(--down); }
+.exec-h-counts { font-size: .8rem; white-space: nowrap; }
+
+/* ===================== PLANES DE ACCIÓN ===================== */
+.planes-card { margin-top: 22px; }
+.planes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.plan {
+  display: flex; flex-direction: column; gap: 10px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px 18px;
+}
+.plan-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.plan-frente {
+  font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--periwinkle);
+}
+.plan-title { font-size: 1.02rem; font-weight: 700; }
+.plan-obj { font-size: .88rem; color: #d5dae6; }
+.plan-obj-tag {
+  font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--periwinkle); margin-right: 4px;
+}
+.plan-acciones { margin: 2px 0 2px 20px; display: flex; flex-direction: column; gap: 8px; font-size: .88rem; }
+.plan-acciones li::marker { color: var(--periwinkle); font-weight: 700; }
+.plan-meta { display: block; font-size: .74rem; }
+.plan .chain { margin-top: 2px; }
+.plan-ask { align-self: flex-start; margin-top: auto; font-size: .82rem; padding: 8px 14px; }
 
 /* ===================== CHAT ===================== */
 .chat-card { display: flex; flex-direction: column; padding: 22px; }
@@ -469,7 +528,10 @@ body {
   .brecha-bullet { display: none; }
 
   .exec { flex-direction: column; align-items: stretch; }
+  .exec-health { flex-wrap: wrap; }
   .exec-persps { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .planes { grid-template-columns: 1fr; }
+  .alertas-hint { margin-left: 0; }
   .exec-chip { min-width: 0; }
   .msg { max-width: 100%; }
   .chat-log { max-height: 60vh; }
@@ -484,6 +546,7 @@ body {
 
   .exec-persps { grid-template-columns: repeat(2, 1fr); }
   .exec-h-num { font-size: 1.6rem; }
+  .exec-h-delta, .exec-h-counts { white-space: normal; }
   .chat-input { flex-direction: column; }
   .chat-input .btn { width: 100%; }
 }

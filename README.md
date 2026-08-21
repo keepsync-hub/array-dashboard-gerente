@@ -15,12 +15,19 @@ Sitio estático (HTML + CSS + JS, **sin dependencias externas**). Datos **fictic
 
 Pensado para un **CEO**: la primera pantalla es simple y accionable.
 
-- **Salud del negocio** — salud global + las 4 perspectivas BSC (Financiera, Clientes,
+- **Salud del negocio** — salud global con **delta vs el periodo anterior** y conteo de
+  críticos / en riesgo / alertas tempranas, + las 4 perspectivas BSC (Financiera, Clientes,
   Procesos, Aprendizaje) con semáforo, y los **cuellos de botella** destacados (dos frentes
   críticos: servicio/First-Time-Fix y comercial/preventa).
+- **📉 Alertas tempranas** — indicadores **aún en meta pero empeorando** (el verde que se
+  está apagando), con los periodos consecutivos sin mejora.
 - **💬 Chat "Pregúntale a tus datos"** — asistente conversacional **local** (sin backend)
   que responde preguntas sobre el negocio con un diagnóstico: cuellos de botella, causas,
-  impacto de mejoras y oportunidades priorizadas. Trae preguntas de ejemplo sugeridas.
+  impacto de mejoras, oportunidades priorizadas, tendencias y **planes de acción**. Trae
+  preguntas de ejemplo sugeridas.
+- **🎯 Planes de acción propuestos** — un plan por frente crítico: objetivo cuantificado,
+  acciones con responsable y plazo, y la cadena de **impacto esperado** hasta el EBITDA.
+  Cada tarjeta permite preguntar por el plan directamente en el chat.
 - **📊 Análisis detallado (desplegable)** — para quien quiere profundizar:
   - **Mapa estratégico & cadenas de impacto** — 4 niveles del BSC con hilo conductor causal;
     las flechas trazan cómo una brecha se propaga. Enfoca las cadenas de los cuellos de botella (⛔).
@@ -30,15 +37,15 @@ Pensado para un **CEO**: la primera pantalla es simple y accionable.
 
 ### Ejemplos de preguntas al chat
 
-> ¿Cuáles son los cuellos de botella? · ¿Por qué está bajo el First-Time-Fix? ·
-> ¿Qué impacto tiene mejorar la resolución remota? · ¿Cómo va Servicio Técnico? ·
-> ¿Dónde están mis mayores oportunidades? · Resumen ejecutivo
+> Resumen ejecutivo · ¿Cuáles son los cuellos de botella? · ¿Qué plan de acción me
+> propones? · ¿Qué está empeorando aunque esté en meta? · ¿Por qué cae el EBITDA? ·
+> ¿Dónde están mis mayores oportunidades? · ¿Cómo va Servicio Técnico?
 
 ## ✏️ Editar indicadores
 
 Toda la data vive en un solo archivo: **`data.js`** (catálogo de KPIs con `actual`, `meta`,
-`prev`, `trend`, `fuente`; grafo de impacto `impactos`; umbrales del semáforo). La capa de
-render (`app.js`) no define datos.
+`prev`, `trend`, `fuente`; grafo de impacto `impactos`; **planes de acción** `planes`;
+umbrales del semáforo). La capa de render (`app.js`) no define datos.
 
 ## 🎨 Paleta de colores
 
@@ -55,10 +62,10 @@ Tema **oscuro**, en línea con la marca Tecnodata S.A.
 ## 📁 Estructura
 
 ```
-index.html                    Vista CEO (banda ejecutiva, chat) + análisis detallado
+index.html                    Vista CEO (banda ejecutiva, alertas, chat, planes) + análisis detallado
 styles.css                    Estilos, tokens de marca y semáforo, responsive
-data.js                       DATA (KPIs, grafo de impacto, fuentes) + helpers  ← EDITAR AQUÍ
-app.js                        Render de banda ejecutiva, mapa, matriz y brechas (SVG puro)
+data.js                       DATA (KPIs, grafo de impacto, fuentes, planes) + helpers  ← EDITAR AQUÍ
+app.js                        Render de banda ejecutiva, alertas, planes, mapa, matriz y brechas
 chat.js                       Motor local del chat "Pregúntale a tus datos"
 docs/REQUERIMIENTOS.md        Documento de requerimiento funcional (FRD)
 assets/logo.png               Logo oficial Tecnodata S.A.

@@ -78,21 +78,35 @@ Cuatro perspectivas, leídas en el mapa de arriba hacia abajo, con las áreas re
 - **RF-12 · Chat "Pregúntale a tus datos".** Asistente conversacional **100% local** (sin
   backend ni llamadas externas; funciona en GitHub Pages) que interpreta preguntas en
   lenguaje natural y responde con un diagnóstico construido sobre el grafo causal y los
-  helpers de datos. Intenciones soportadas: resumen ejecutivo, cuello de botella,
-  oportunidades/prioridades (con quick win), causas de un problema ("¿por qué cae X?"),
-  impacto de una mejora ("¿qué pasa si mejoro X?"), estado de un área, de una perspectiva o
-  de un indicador, y origen de los datos. Al abrir muestra un mensaje de bienvenida con el
-  diagnóstico actual y **preguntas sugeridas** clicables. Motor en `chat.js`.
+  helpers de datos. Intenciones soportadas: resumen ejecutivo (con tendencia de la salud
+  global), cuello de botella, **plan de acción** (global o por indicador), **alertas
+  tempranas / tendencias** ("¿qué está empeorando?"), oportunidades/prioridades (con quick
+  win), causas de un problema ("¿por qué cae X?"), impacto de una mejora ("¿qué pasa si
+  mejoro X?"), estado de un área, de una perspectiva o de un indicador, y origen de los
+  datos. Al abrir muestra un mensaje de bienvenida con el diagnóstico actual y **preguntas
+  sugeridas** clicables. Motor en `chat.js`.
+- **RF-13 · Planes de acción propuestos.** Un plan por frente crítico, declarado en
+  `DATA.planes` (`data.js`): frente, título, objetivo cuantificado, 4 acciones concretas
+  (cada una con responsable y plazo) y la **cadena de impacto esperado** como chips
+  causa → efecto hasta lo financiero. Se muestran como tarjetas bajo el chat, con botón
+  "Preguntar por este plan" que envía la pregunta al chat. El chat responde el plan
+  asociado a cualquier KPI de la misma cadena causal (helper `planFor(id)`).
+- **RF-14 · Alertas tempranas.** Franja ámbar bajo el diagnóstico con los indicadores
+  **aún en meta pero empeorando** vs el periodo anterior (helper `earlyWarnings()`), con
+  los periodos consecutivos sin mejora (`stallStreak`). Es el complemento de la gestión
+  por excepción: el verde que se está apagando. La banda ejecutiva muestra además el
+  **delta de salud global** vs el periodo anterior y el conteo de críticos / en riesgo /
+  alertas tempranas.
 
 ### Preguntas de ejemplo (sugeridas en el chat)
 
+- Resumen ejecutivo
 - ¿Cuáles son los cuellos de botella?
-- ¿Por qué está bajo el First-Time-Fix?
-- ¿Qué impacto tiene mejorar la resolución remota?
-- ¿Cómo va Servicio Técnico?
+- ¿Qué plan de acción me propones?
+- ¿Qué está empeorando aunque esté en meta?
+- ¿Por qué cae el EBITDA?
 - ¿Dónde están mis mayores oportunidades de mejora?
-- Dame un resumen ejecutivo del negocio.
-- ¿Por qué cae el EBITDA? · ¿Qué impacto tiene mejorar la preventa?
+- ¿Qué impacto tiene mejorar la resolución remota? · ¿Cómo va Servicio Técnico?
 
 ## 4. Catálogo de indicadores (datos simulados) con fuente
 
@@ -188,11 +202,11 @@ dirigido KPI-a-KPI declarado en `data.js`. Escenarios modelados:
 ### Estructura de archivos
 
 ```
-index.html   Estructura de la vista (banda ejecutiva, chat y detalle desplegable)
+index.html   Estructura de la vista (banda ejecutiva, alertas, chat, planes y detalle)
 styles.css   Estilos, tokens de marca y semáforo, responsive
-data.js      DATA (KPIs, grafo de impacto, fuentes) + helpers puros  ← EDITAR AQUÍ
-app.js       Render de la banda ejecutiva, pulso, mapa, matriz y brechas (SVG puro)
-chat.js      Motor local del chat "Pregúntale a tus datos" (Q&A + diagnóstico)
+data.js      DATA (KPIs, grafo de impacto, fuentes, planes de acción) + helpers  ← EDITAR AQUÍ
+app.js       Render de banda ejecutiva, alertas, planes, pulso, mapa, matriz y brechas
+chat.js      Motor local del chat "Pregúntale a tus datos" (Q&A + diagnóstico + planes)
 docs/REQUERIMIENTOS.md   Este documento
 assets/logo.png          Logo Tecnodata S.A.
 ```

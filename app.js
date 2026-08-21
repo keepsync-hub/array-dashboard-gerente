@@ -451,14 +451,26 @@ function syncSidebar() {
 
 /* ============================ Banda ejecutiva (CEO) ============================ */
 function renderExecBand() {
-  // Salud global
+  // Salud global + delta vs periodo anterior + conteos de excepción
   const gEl = document.getElementById('exec-global');
   if (gEl) {
     const g = avgAttainment(DATA.kpis);
+    const gPrev = avgAttainmentPrev(DATA.kpis);
     const st = statusFromScore(g);
     clear(gEl);
     gEl.appendChild(makeDot(st));
     gEl.appendChild(el('span', { class: 'exec-h-num', text: Math.round(g * 100) + '%' }));
+    const diff = Math.round((g - gPrev) * 1000) / 10;   // puntos de salud, 1 decimal
+    const up = diff >= 0;
+    gEl.appendChild(el('span', {
+      class: 'exec-h-delta ' + (up ? 'up' : 'down'),
+      text: `${up ? '▲' : '▼'} ${Math.abs(diff).toLocaleString('es-CL')} pts vs per. anterior`
+    }));
+    const bad = DATA.kpis.filter(k => statusOf(k) === 'bad').length;
+    const warn = DATA.kpis.filter(k => statusOf(k) === 'warn').length;
+    const ew = earlyWarnings().length;
+    gEl.appendChild(el('span', { class: 'exec-h-counts muted',
+      text: `${bad} críticos · ${warn} en riesgo · ${ew} alertas tempranas` }));
   }
   // Chips por perspectiva
   const pWrap = document.getElementById('exec-persps');
@@ -475,10 +487,87 @@ function renderExecBand() {
   }
 }
 
+/* ============================ Alertas tempranas ============================ */
+// KPIs aún en meta pero empeorando: lo que el semáforo verde esconde.
+function renderAlertas() {
+  const host = document.getElementById('alertas');
+  if (!host) return;
+  clear(host);
+  const ew = earlyWarnings();
+  if (!ew.length) { host.style.display = 'none'; return; }
+  host.style.display = '';
+  host.appendChild(el('span', { class: 'alertas-badge', text: '📉 Alertas tempranas' }));
+  const list = el('div', { class: 'alertas-list' });
+  ew.forEach(k => {
+    const streak = stallStreak(k);
+    const item = el('span', { class: 'alerta-item',
+      title: `${k.nombre}: ${fmt(k)} (meta ${fmtMeta(k)}) — aún en meta, pero empeora vs el periodo anterior.` }, [
+      el('b', { text: k.nombre }),
+      el('span', { class: 'muted', text: ` ${fmt(k)} · en meta, ${streak > 1 ? streak + ' periodos sin mejorar' : 'empeorando'}` })
+    ]);
+    list.appendChild(item);
+  });
+  host.appendChild(list);
+  host.appendChild(el('span', { class: 'alertas-hint muted', text: 'Atender antes de que salgan de meta.' }));
+}
+
+/* ============================ Planes de acción ============================ */
+function renderPlanes() {
+  const host = document.getElementById('planes');
+  if (!host) return;
+  clear(host);
+  (DATA.planes || []).forEach(p => {
+    const root = kpi(p.kpi);
+    const st = statusOf(root);
+    const card = el('article', { class: 'plan' });
+
+    card.appendChild(el('div', { class: 'plan-head' }, [
+      el('span', { class: 'plan-frente', text: p.frente }),
+      el('span', { class: 'pill pill-' + (st === 'bad' ? 'bad' : 'warn'), text: labelEstado(st) })
+    ]));
+    card.appendChild(el('h3', { class: 'plan-title', text: p.titulo }));
+    card.appendChild(el('p', { class: 'plan-obj' }, [
+      el('span', { class: 'plan-obj-tag', text: 'Objetivo' }),
+      el('span', { text: ' ' + p.objetivo })
+    ]));
+
+    const ol = el('ol', { class: 'plan-acciones' });
+    p.acciones.forEach(a => {
+      ol.appendChild(el('li', {}, [
+        el('span', { text: a.txt }),
+        el('span', { class: 'plan-meta muted', text: `${a.resp} · ${a.plazo}` })
+      ]));
+    });
+    card.appendChild(ol);
+
+    const chBox = el('div', { class: 'chain' });
+    chBox.appendChild(el('span', { class: 'chain-lbl', text: 'Impacto esperado:' }));
+    p.impacto.forEach((id, i) => {
+      if (i) chBox.appendChild(el('span', { class: 'chain-arrow', text: '→' }));
+      chBox.appendChild(el('span', { class: 'chip chip-' + statusClass(statusOf(kpi(id))), text: shortName(id) }));
+    });
+    card.appendChild(chBox);
+
+    const btn = el('button', { class: 'btn plan-ask', type: 'button', text: '💬 Preguntar por este plan' });
+    btn.addEventListener('click', () => {
+      if (typeof CEOChat !== 'undefined' && CEOChat.ask) {
+        CEOChat.ask(`¿Qué plan de acción hay para ${root.nombre}?`);
+        const chat = document.querySelector('.chat-card');
+        if (chat) chat.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+    card.appendChild(btn);
+
+    host.appendChild(card);
+  });
+}
+
 /* ============================ Orquestación ============================ */
 function renderAll() {
   renderExecBand();
   renderDiagnostico();
+  renderAlertas();
+  renderPlanes();
   renderPulso();
   renderStrategyMap();
   renderMatrix();

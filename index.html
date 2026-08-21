@@ -57,6 +57,9 @@
     <!-- ===== Diagnóstico / cuello de botella ===== -->
     <div class="diagnostico" id="diagnostico"><!-- JS --></div>
 
+    <!-- ===== Alertas tempranas: en meta pero perdiendo tracción ===== -->
+    <div class="alertas" id="alertas"><!-- JS --></div>
+
     <!-- ===== CHAT: Pregúntale a tus datos (protagonista) ===== -->
     <section class="card chat-card" aria-label="Chat de diagnóstico">
       <div class="card-head chat-head">
@@ -65,12 +68,23 @@
           <span class="muted">Diagnóstico de cuellos de botella y oportunidades de mejora</span>
         </div>
       </div>
-      <div class="chat-log" id="chat-log"><!-- conversación (JS) --></div>
+      <div class="chat-log" id="chat-log" aria-live="polite"><!-- conversación (JS) --></div>
       <div class="chat-suggest" id="chat-suggest"><!-- sugerencias (JS) --></div>
       <form class="chat-input" id="chat-form" autocomplete="off">
         <input id="chat-text" type="text" placeholder="Escribe tu pregunta…  p. ej. ¿Cuál es el principal cuello de botella?" aria-label="Tu pregunta">
         <button type="submit" class="btn btn-primary">Preguntar</button>
       </form>
+    </section>
+
+    <!-- ===== Planes de acción propuestos ===== -->
+    <section class="card planes-card" aria-label="Planes de acción propuestos">
+      <div class="card-head">
+        <div>
+          <h2>🎯 Planes de acción propuestos</h2>
+          <span class="muted">Un plan por frente crítico — acciones, responsables, plazos e impacto esperado</span>
+        </div>
+      </div>
+      <div class="planes" id="planes"><!-- JS --></div>
     </section>
 
     <!-- ===== Análisis detallado (desplegable) ===== -->

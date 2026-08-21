@@ -76,21 +76,26 @@ const CEOChat = (function () {
 
   function ansResumen() {
     const g = avgAttainment(DATA.kpis), gst = statusFromScore(g);
+    const gPrev = avgAttainmentPrev(DATA.kpis);
+    const diff = Math.round((g - gPrev) * 1000) / 10;
+    const tendencia = diff >= 0 ? `mejora <b>+${Math.abs(diff).toLocaleString('es-CL')}</b> pts` : `empeora <b>−${Math.abs(diff).toLocaleString('es-CL')}</b> pts`;
     const persps = DATA.perspectivas.map(p => ({ p, s: avgAttainment(kpisByPerspectiva(p.id)) }));
     const worst = persps.slice().sort((a, b) => a.s - b.s)[0];
     const bad = DATA.kpis.filter(k => statusOf(k) === 'bad').length;
     const warn = DATA.kpis.filter(k => statusOf(k) === 'warn').length;
-    const bn = kpi(bottleneck());
+    const frentes = bottlenecks(2).map(id => `<b>${kpi(id).nombre}</b> (${areaLabel(kpi(id))})`);
+    const ew = earlyWarnings();
     const top = topBrechas(3);
-    return `El negocio está en <b>${pct(g)}</b> de salud global ${chip(gst)}.
+    return `El negocio está en <b>${pct(g)}</b> de salud global ${chip(gst)} y ${tendencia} vs el periodo anterior.
       <ul class="ans-list">
         <li>Perspectiva más débil: <b>${worst.p.nombre}</b> (${pct(worst.s)}).</li>
-        <li>Cuello de botella: <b>${bn.nombre}</b> — ${areaLabel(bn)}.</li>
+        <li>Frentes críticos: ${frentes.join(' y ')}.</li>
         <li>Indicadores fuera de meta: <b>${bad}</b> críticos y <b>${warn}</b> en riesgo.</li>
+        ${ew.length ? `<li>Alertas tempranas (en meta pero empeorando): ${ew.map(k => '<b>' + k.nombre + '</b>').join(', ')}.</li>` : ''}
       </ul>
       <div class="ans-sub">Prioridades del trimestre</div>
       <ol class="ans-list">${top.map(k => `<li><b>${k.nombre}</b> (${areaLabel(k)}) — ${fmt(k)} / meta ${fmtMeta(k)} ${chip(statusOf(k))}</li>`).join('')}</ol>
-      ${reco(`Poner el foco en <b>${shortName(bn.id)}</b>: es la palanca que hoy más protege el ${money}.`)}`;
+      ${reco(`Hay un plan de acción propuesto por cada frente crítico. Pregúntame: <i>"¿Qué plan de acción me propones?"</i>`)}`;
   }
 
   // Recomendación específica por frente (según el KPI raíz).
@@ -117,7 +122,7 @@ const CEOChat = (function () {
         <div class="ans-chain">${chainStr(chain)}</div>
         ${reco(recoFrente(id, k))}`;
     }).join('');
-    return `${intro}${bloques}`;
+    return `${intro}${bloques}<div class="ans-note">📋 Hay un plan de acción propuesto para cada frente — pídemelo: <i>"¿Qué plan de acción me propones?"</i></div>`;
   }
 
   function ansOportunidades() {
@@ -139,6 +144,9 @@ const CEOChat = (function () {
 
   // Aristas entrantes (reconstruidas localmente para el quick win).
   function IN_edges(id) { return DATA.impactos.filter(e => e.a === id); }
+
+  // Cuellos de botella activos, para marcar ⛔ en las respuestas.
+  function bnSet() { return new Set(bottlenecks(2)); }
 
   function ansCausa(id) {
     const k = kpi(id);
@@ -173,7 +181,7 @@ const CEOChat = (function () {
     const nombre = DATA.areas[area].nombre;
     return `<b>${nombre}</b> está en <b>${pct(s)}</b> ${chip(st)}.
       ${fuera.length ? `<div class="ans-sub">Lo que frena al área</div>
-        <ul class="ans-list">${fuera.slice(0, 4).map(k => `<li><b>${k.nombre === undefined ? '' : (k.subarea === 'preventa' ? '⛔ ' : '')}${k.nombre}</b> — ${fmt(k)} / meta ${fmtMeta(k)} ${chip(statusOf(k))}</li>`).join('')}</ul>` : '<div class="ans-note">Sin brechas: el área está en meta.</div>'}
+        <ul class="ans-list">${fuera.slice(0, 4).map(k => `<li><b>${bnSet().has(k.id) ? '⛔ ' : ''}${k.nombre}</b> — ${fmt(k)} / meta ${fmtMeta(k)} ${chip(statusOf(k))}</li>`).join('')}</ul>` : '<div class="ans-note">Sin brechas: el área está en meta.</div>'}
       ${enMeta.length ? `<div class="ans-note muted">En meta: ${enMeta.map(k => k.nombre).join(', ')}.</div>` : ''}
       ${fuera.length ? reco(`El freno principal del área es <b>${fuera[0].nombre}</b>. Actuar ahí mueve el resto.`) : ''}`;
   }
@@ -200,6 +208,49 @@ const CEOChat = (function () {
       ${st !== 'ok' && effects.length ? `<div class="ans-note">Si no se corrige, presiona: ${effects.map(shortName).join(', ')}.</div>` : ''}`;
   }
 
+  /* ---- Planes de acción ---- */
+
+  function planHtml(p) {
+    const root = kpi(p.kpi);
+    return `<div class="ans-sub">${p.frente} — ${p.titulo}</div>
+      <div class="ans-note"><b>Objetivo:</b> ${p.objetivo}</div>
+      <ol class="ans-list">${p.acciones.map(a => `<li>${a.txt} <span class="muted">(${a.resp} · ${a.plazo})</span></li>`).join('')}</ol>
+      <div class="ans-chain">${chainStr(p.impacto)}</div>`;
+  }
+
+  function ansPlan(id) {
+    const planes = DATA.planes || [];
+    if (id) {
+      const p = planFor(id);
+      if (p) return `Para <b>${kpi(id).nombre}</b> el plan propuesto es:${planHtml(p)}
+        ${reco(`Cada acción tiene responsable y plazo. El avance se mide en la cadena de impacto: si <b>${shortName(p.kpi)}</b> mejora y su cadena no, hay que revisar el plan.`)}`;
+      // Sin plan predefinido: propuesta genérica desde las causas
+      const causes = upstream(id).filter(x => statusOf(kpi(x)) !== 'ok');
+      return `No hay un plan predefinido para <b>${kpi(id).nombre}</b>.
+        ${causes.length ? `Sus causas fuera de meta son: ${causes.slice(0, 3).map(x => `<b>${shortName(x)}</b> (${fmt(kpi(x))} / meta ${fmtMeta(kpi(x))})`).join(', ')}.
+        ${reco(`Un plan efectivo parte por la causa raíz: <b>${shortName(causes[causes.length - 1])}</b>.`)}` : reco(`Es un indicador accionable directamente: asignar responsable, meta intermedia y revisión quincenal.`)}`;
+    }
+    if (!planes.length) return 'No hay planes de acción definidos.';
+    return `Tengo <b>${planes.length} planes de acción</b> propuestos, uno por frente crítico:
+      ${planes.map(planHtml).join('')}
+      ${reco(`Sugiero revisarlos en el comité semanal: acciones con responsable y plazo, y avance medido sobre la cadena de impacto.`)}`;
+  }
+
+  /* ---- Alertas / tendencias ---- */
+
+  function ansAlertas() {
+    const ew = earlyWarnings();
+    const cayendo = DATA.kpis.filter(k => statusOf(k) !== 'ok' && !delta(k).mejora)
+      .sort((a, b) => gap(b) - gap(a)).slice(0, 3);
+    if (!ew.length && !cayendo.length) return 'Nada está empeorando: todos los indicadores mejoran o se mantienen. 👏';
+    return `Esto es lo que viene perdiendo tracción:
+      ${cayendo.length ? `<div class="ans-sub">Fuera de meta y aún empeorando</div>
+        <ul class="ans-list">${cayendo.map(k => `<li><b>${k.nombre}</b> (${areaLabel(k)}) — ${fmt(k)} / meta ${fmtMeta(k)} ${chip(statusOf(k))}</li>`).join('')}</ul>` : ''}
+      ${ew.length ? `<div class="ans-sub">⚠ En meta, pero deteriorándose (alerta temprana)</div>
+        <ul class="ans-list">${ew.map(k => `<li><b>${k.nombre}</b> — ${fmt(k)} (meta ${fmtMeta(k)}), ${stallStreak(k) > 1 ? stallStreak(k) + ' periodos sin mejorar' : 'empeoró este periodo'} ${chip('ok')}</li>`).join('')}</ul>` : ''}
+      ${ew.length ? reco(`Las alertas tempranas son el mejor momento para actuar: aún están en meta y el costo de corregir es bajo.`) : ''}`;
+  }
+
   function ansFuentes() {
     const usadas = [...new Set(DATA.kpis.map(k => k.fuente))];
     return `Cada indicador se alimenta de su sistema fuente (simulado):
@@ -210,7 +261,8 @@ const CEOChat = (function () {
     return `Puedo diagnosticar tu negocio a partir de los datos. Prueba con preguntas como:
       <ul class="ans-list">
         <li>¿Cuál es el principal cuello de botella?</li>
-        <li>¿Dónde están mis mayores oportunidades de mejora?</li>
+        <li>¿Qué plan de acción me propones?</li>
+        <li>¿Qué está empeorando aunque esté en meta?</li>
         <li>¿Por qué cae el EBITDA?</li>
         <li>¿Cómo va el área de Ventas?</li>
         <li>¿Qué impacto tiene mejorar la preventa?</li>
@@ -226,6 +278,8 @@ const CEOChat = (function () {
 
     if (/(fuente|origen del dato|de donde|que sistema|sistemas)/.test(q)) return ansFuentes();
     if (/(resumen|como estamos|como va el negocio|vision general|panorama|estado general|como vamos|overview|dashboard)/.test(q)) return ansResumen();
+    if (/(\bplan(es)? de accion\b|\bplan\b|hoja de ruta|roadmap|que hacemos|que debo hacer|como lo (soluciono|arreglo|resuelvo|corrijo)|acciones concretas|siguientes pasos|proximos pasos)/.test(q)) return ansPlan(kpis[0] || null);
+    if (!kpis.length && /(alerta|empeorando|deteriorand|a la baja|perdiendo traccion|tendencias|que se esta cayendo|viene cayendo|radar)/.test(q)) return ansAlertas();
     if (/(impacto|si mejoro|que pasa si|si arreglo|si soluciono|beneficio de|efecto de|si subo|si aumento)/.test(q) && kpis.length) return ansImpacto(kpis[0]);
     if (/(por que|porque|causa|razon|a que se debe|motivo)/.test(q)) {
       if (kpis.length) return ansCausa(kpis[0]);
@@ -248,12 +302,12 @@ const CEOChat = (function () {
   }
 
   const SUGGESTIONS = [
+    'Resumen ejecutivo',
     '¿Cuáles son los cuellos de botella?',
-    '¿Por qué está bajo el First-Time-Fix?',
-    '¿Qué impacto tiene mejorar la resolución remota?',
-    '¿Cómo va Servicio Técnico?',
-    '¿Dónde están mis mayores oportunidades?',
-    'Resumen ejecutivo'
+    '¿Qué plan de acción me propones?',
+    '¿Qué está empeorando aunque esté en meta?',
+    '¿Por qué cae el EBITDA?',
+    '¿Dónde están mis mayores oportunidades?'
   ];
 
   /* ---------------- Interfaz (DOM) ---------------- */
@@ -306,7 +360,7 @@ const CEOChat = (function () {
       ? `Hoy tienes <b>${ids.length} frentes críticos</b>: ${frentes}.`
       : `Hoy el principal freno es ${frentes}.`;
     bubble('bot', `Hola 👋 Soy tu asistente de datos. El negocio está en <b>${pct(g)}</b> de salud. ${lead}
-      <div class="ans-note">Pregúntame por un área, un indicador, las causas de un problema o las oportunidades de mejora. También puedes usar las sugerencias de abajo.</div>`);
+      <div class="ans-note">Pregúntame por un área, un indicador, las causas de un problema, las alertas tempranas o pídeme el <b>plan de acción</b> de cada frente. También puedes usar las sugerencias de abajo.</div>`);
   }
 
   function init() {
@@ -325,5 +379,5 @@ const CEOChat = (function () {
     });
   }
 
-  return { init, answer };
+  return { init, answer, ask };
 })();

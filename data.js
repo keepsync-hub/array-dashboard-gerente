@@ -203,7 +203,44 @@ const DATA = {
   ],
 
   // KPIs titulares del pulso ejecutivo (uno por perspectiva).
-  destacados: ['ing_presu', 'nps', 'sla', 'enps']
+  destacados: ['ing_presu', 'nps', 'sla', 'enps'],
+
+  /* ---- Planes de acción propuestos ---------------------------------------
+     Un plan por frente crítico. 'kpi' es el indicador raíz del frente (el que
+     detecta bottlenecks()); 'acciones' son concretas, con responsable y plazo;
+     'impacto' es la cadena de indicadores que el plan destraba (en orden
+     causa → efecto, terminando en lo financiero).
+  ------------------------------------------------------------------------- */
+  planes: [
+    {
+      id: 'plan_remoto',
+      frente: 'Operativo · Servicio post-venta',
+      kpi: 'resolucion_remota',
+      titulo: 'Resolver remoto antes de despachar',
+      objetivo: 'Subir la resolución remota de 38% a 60% y el First-Time-Fix de 72% a 85% en 2 trimestres.',
+      acciones: [
+        { txt: 'Triage de diagnóstico remoto obligatorio antes de despachar un técnico a terreno', resp: 'Servicio Técnico', plazo: '30 días' },
+        { txt: 'Certificar en diagnóstico remoto y herramientas FSM al 85% de los técnicos', resp: 'Servicio + RRHH', plazo: '90 días' },
+        { txt: 'Habilitar telemetría/acceso remoto en el parque instalado de los 20 clientes principales', resp: 'Servicio + TI', plazo: '60 días' },
+        { txt: 'Tablero semanal de FTF y resolución remota por técnico, con metas individuales', resp: 'Jefatura de Servicio', plazo: '15 días' }
+      ],
+      impacto: ['resolucion_remota', 'ftf', 'sla', 'costo_servicio', 'nps', 'ebitda']
+    },
+    {
+      id: 'plan_preventa',
+      frente: 'Comercial · Preventa',
+      kpi: 'preventa_tiempo',
+      titulo: 'Destrabar el embudo en preventa',
+      objetivo: 'Bajar el tiempo de respuesta de propuestas de 7,5 a 5 días y volver a ≥90% de propuestas dentro de plazo.',
+      acciones: [
+        { txt: 'Biblioteca de propuestas y precios estándar (CPQ) para los 10 servicios más vendidos', resp: 'Preventa + Ventas', plazo: '45 días' },
+        { txt: 'Certificar a los preingenieros en el portafolio prioritario', resp: 'Preventa + RRHH', plazo: '90 días' },
+        { txt: 'SLA interno de preventa: toda propuesta calificada se responde en ≤5 días', resp: 'Gerencia Comercial', plazo: '15 días' },
+        { txt: 'Guion y ambiente estándar de POC/demo para elevar la tasa de éxito', resp: 'Preventa', plazo: '60 días' }
+      ],
+      impacto: ['preventa_tiempo', 'conversion', 'productividad', 'ing_presu', 'ebitda']
+    }
+  ]
 };
 
 /* ===========================================================
@@ -244,6 +281,49 @@ function statusFromScore(score) {
   if (score >= u.verde) return 'ok';
   if (score >= u.ambar) return 'warn';
   return 'bad';
+}
+
+// Cumplimiento del periodo anterior (misma normalización que attainment).
+function attainmentPrev(k) {
+  if (!k || !k.meta || k.prev == null) return attainment(k);
+  return k.sentido === 'down' ? (k.meta / k.prev) : (k.prev / k.meta);
+}
+
+// Salud agregada del periodo anterior (para el delta de la banda ejecutiva).
+function avgAttainmentPrev(kpis) {
+  if (!kpis.length) return null;
+  const s = kpis.reduce((acc, k) => acc + Math.min(attainmentPrev(k), 1.15), 0);
+  return s / kpis.length;
+}
+
+// Periodos consecutivos sin mejora al final de la tendencia (según el sentido).
+function stallStreak(k) {
+  const t = k.trend || [];
+  let n = 0;
+  for (let i = t.length - 1; i > 0; i--) {
+    const mejora = k.sentido === 'down' ? t[i] < t[i - 1] : t[i] > t[i - 1];
+    if (mejora) break;
+    n++;
+  }
+  return n;
+}
+
+// Alertas tempranas: indicadores AÚN en meta pero empeorando vs el periodo
+// anterior. Es lo que el semáforo no muestra: verde que se está apagando.
+function earlyWarnings() {
+  return DATA.kpis
+    .filter(k => statusOf(k) === 'ok' && !delta(k).mejora && delta(k).diff !== 0)
+    .sort((a, b) => attainment(a) - attainment(b));
+}
+
+// Plan de acción asociado a un KPI: primero por raíz exacta, luego por
+// pertenencia a la misma cadena causal (aguas arriba o abajo).
+function planFor(id) {
+  const planes = DATA.planes || [];
+  const exact = planes.find(p => p.kpi === id);
+  if (exact) return exact;
+  const rel = new Set([id, ...upstream(id), ...downstream(id)]);
+  return planes.find(p => rel.has(p.kpi)) || null;
 }
 
 function kpisByArea(area) { return DATA.kpis.filter(k => k.area === area); }
