@@ -240,7 +240,37 @@ const DATA = {
       ],
       impacto: ['preventa_tiempo', 'conversion', 'productividad', 'ing_presu', 'ebitda']
     }
-  ]
+  ],
+
+  /* ---- Cumplimiento financiero vs Business Plan ---------------------------
+     Venta (cierre de negocios), Facturación, Margen bruto y EBITDA, cada uno
+     con: mes actual, YTD y año anterior (py), contra el business plan (plan).
+     tipo:'money' => montos en DATA.bp.moneda; tipo:'pct' => porcentaje.
+     El EBITDA es el indicador de salud financiera del negocio (destacado).
+     Coherencia con el catálogo de KPIs: facturación YTD 96,2% del plan
+     (= 'Ingresos vs presupuesto') y margen EBITDA YTD 12,8% vs 14%.
+  ------------------------------------------------------------------------- */
+  bp: {
+    moneda: 'MM$',
+    nota: 'Business plan anual aprobado por el directorio · cifras ficticias',
+    metricas: [
+      { id: 'bp_venta', nombre: 'Venta (cierre de negocios)', tipo: 'money',
+        mes: { actual: 1150, plan: 1320, py: 1190 },
+        ytd: { actual: 9020, plan: 9980, py: 8760 } },
+      { id: 'bp_fact', nombre: 'Facturación', tipo: 'money',
+        mes: { actual: 1240, plan: 1310, py: 1150 },
+        ytd: { actual: 9480, plan: 9850, py: 8920 } },
+      { id: 'bp_margen', nombre: 'Margen bruto', tipo: 'pct',
+        mes: { actual: 30.8, plan: 33.0, py: 32.2 },
+        ytd: { actual: 31.6, plan: 33.0, py: 32.4 } },
+      { id: 'bp_ebitda', nombre: 'EBITDA', tipo: 'money', destacado: true,
+        mes: { actual: 150, plan: 183, py: 152 },
+        ytd: { actual: 1213, plan: 1379, py: 1195 },
+        // margen EBITDA (%) asociado al monto, para mostrarlo como subdato
+        margen: { mes: { actual: 12.1, plan: 14.0, py: 13.2 },
+                  ytd: { actual: 12.8, plan: 14.0, py: 13.4 } } }
+    ]
+  }
 };
 
 /* ===========================================================
@@ -314,6 +344,32 @@ function earlyWarnings() {
   return DATA.kpis
     .filter(k => statusOf(k) === 'ok' && !delta(k).mejora && delta(k).diff !== 0)
     .sort((a, b) => attainment(a) - attainment(b));
+}
+
+/* ---- Helpers del cumplimiento vs Business Plan ---- */
+
+// Formatea un valor de una métrica BP ('mes' | 'ytd', campo 'actual'|'plan'|'py').
+function bpVal(m, per, campo) {
+  const v = m[per][campo == null ? 'actual' : campo];
+  if (m.tipo === 'pct') return v.toLocaleString('es-CL', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+  return DATA.bp.moneda + ' ' + Math.round(v).toLocaleString('es-CL');
+}
+
+// Cumplimiento vs plan (0..1+) del periodo 'mes' o 'ytd'.
+function bpCumpl(m, per) { return m[per].actual / m[per].plan; }
+
+// Cumplimiento con 1 decimal (evita que 94,7% se lea "95%" con semáforo ámbar).
+function pctBP(x) { return (Math.round(x * 1000) / 10).toLocaleString('es-CL', { maximumFractionDigits: 1 }) + '%'; }
+
+// Variación vs año anterior del periodo: % de crecimiento para montos,
+// diferencia en puntos para porcentajes. Devuelve { texto, up }.
+function bpVsPy(m, per) {
+  if (m.tipo === 'pct') {
+    const d = m[per].actual - m[per].py;
+    return { texto: (d >= 0 ? '+' : '−') + Math.abs(d).toLocaleString('es-CL', { maximumFractionDigits: 1 }) + ' pts', up: d >= 0 };
+  }
+  const g = (m[per].actual / m[per].py - 1) * 100;
+  return { texto: (g >= 0 ? '+' : '−') + Math.abs(g).toLocaleString('es-CL', { maximumFractionDigits: 1 }) + '%', up: g >= 0 };
 }
 
 // Plan de acción asociado a un KPI: primero por raíz exacta, luego por

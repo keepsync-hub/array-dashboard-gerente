@@ -93,6 +93,8 @@ const CEOChat = (function () {
         <li>Indicadores fuera de meta: <b>${bad}</b> críticos y <b>${warn}</b> en riesgo.</li>
         ${ew.length ? `<li>Alertas tempranas (en meta pero empeorando): ${ew.map(k => '<b>' + k.nombre + '</b>').join(', ')}.</li>` : ''}
       </ul>
+      ${DATA.bp ? `<div class="ans-sub">Cumplimiento financiero vs business plan</div>
+      <ul class="ans-list">${DATA.bp.metricas.map(bpLine).join('')}</ul>` : ''}
       <div class="ans-sub">Prioridades del trimestre</div>
       <ol class="ans-list">${top.map(k => `<li><b>${k.nombre}</b> (${areaLabel(k)}) — ${fmt(k)} / meta ${fmtMeta(k)} ${chip(statusOf(k))}</li>`).join('')}</ol>
       ${reco(`Hay un plan de acción propuesto por cada frente crítico. Pregúntame: <i>"¿Qué plan de acción me propones?"</i>`)}`;
@@ -208,6 +210,28 @@ const CEOChat = (function () {
       ${st !== 'ok' && effects.length ? `<div class="ans-note">Si no se corrige, presiona: ${effects.map(shortName).join(', ')}.</div>` : ''}`;
   }
 
+  /* ---- Cumplimiento financiero vs Business Plan ---- */
+
+  // Una línea por métrica BP: mes vs plan · YTD vs plan · vs año anterior.
+  function bpLine(m) {
+    const cMes = bpCumpl(m, 'mes'), cYtd = bpCumpl(m, 'ytd');
+    const g = bpVsPy(m, 'ytd');
+    return `<li><b>${m.nombre}</b> — mes ${bpVal(m, 'mes')} (${pctBP(cMes)} del plan) ${chip(statusFromScore(cMes))} ·
+      YTD ${bpVal(m, 'ytd')} (${pctBP(cYtd)} del plan) ${chip(statusFromScore(cYtd))} ·
+      ${g.up ? '▲' : '▼'} ${g.texto} vs año anterior</li>`;
+  }
+
+  function ansBP() {
+    const bp = DATA.bp;
+    if (!bp) return 'No tengo datos de business plan cargados.';
+    const eb = bp.metricas.find(m => m.destacado);
+    const cEb = eb ? bpCumpl(eb, 'ytd') : null;
+    return `Así vamos contra el <b>business plan</b> (${bp.nota}):
+      <ul class="ans-list">${bp.metricas.map(bpLine).join('')}</ul>
+      ${eb && eb.margen ? `<div class="ans-note">★ El <b>EBITDA</b> es la salud financiera del negocio: margen <b>${eb.margen.ytd.actual.toLocaleString('es-CL', { minimumFractionDigits: 1 })}%</b> YTD vs plan ${eb.margen.ytd.plan.toLocaleString('es-CL', { minimumFractionDigits: 1 })}% — cumplimiento <b>${pct(cEb)}</b> en monto.</div>` : ''}
+      ${reco(`La facturación crece vs el año anterior pero el EBITDA está casi plano: el margen se está erosionando (costo de servicio en terreno). Los dos planes de acción atacan exactamente eso.`)}`;
+  }
+
   /* ---- Planes de acción ---- */
 
   function planHtml(p) {
@@ -277,6 +301,10 @@ const CEOChat = (function () {
     const kpis = findKpis(q);
 
     if (/(fuente|origen del dato|de donde|que sistema|sistemas)/.test(q)) return ansFuentes();
+    // Business plan con mención explícita: gana sobre resumen y planes de acción,
+    // salvo que la pregunta sea causal ("¿por qué cae...?") o de impacto.
+    const esCausal = /(por que|porque|causa|razon|impacto|si mejoro|que pasa si|a que se debe)/.test(q);
+    if (!esCausal && /(business ?plan|\bbp\b|\bytd\b|vs plan|contra (el )?plan|ano anterior|ano pasado|past year|cumplimiento financiero|meta de venta|metas de venta|margen bruto)/.test(q)) return ansBP();
     if (/(resumen|como estamos|como va el negocio|vision general|panorama|estado general|como vamos|overview|dashboard)/.test(q)) return ansResumen();
     if (/(\bplan(es)? de accion\b|\bplan\b|hoja de ruta|roadmap|que hacemos|que debo hacer|como lo (soluciono|arreglo|resuelvo|corrijo)|acciones concretas|siguientes pasos|proximos pasos)/.test(q)) return ansPlan(kpis[0] || null);
     if (!kpis.length && /(alerta|empeorando|deteriorand|a la baja|perdiendo traccion|tendencias|que se esta cayendo|viene cayendo|radar)/.test(q)) return ansAlertas();
@@ -288,6 +316,10 @@ const CEOChat = (function () {
     }
     if (/(cuellos? de botella|bottleneck|frentes? critico|principal problema|mayor problema|que esta mal|que esta fallando|donde esta el problema|restriccion|traba|freno principal)/.test(q)) return ansBottleneck();
     if (/(oportunidad|mejorar|prioridad|prioridades|donde enfocar|quick win|donde invertir|palanca|donde poner el foco|que hago primero)/.test(q)) return ansOportunidades();
+
+    // Fallback BP: menciones sueltas de facturación/venta que no fueron causales
+    // ni de impacto (esas ya se respondieron arriba con el análisis del grafo).
+    if (/(facturacion|venta del mes|como vamos en venta|acumulado)/.test(q)) return ansBP();
 
     const area = findArea(q);
     if (area && /(como va|estado|como esta|situacion|desempeno|salud|va el area|va la|resultados de)/.test(q)) return ansArea(area);
@@ -303,6 +335,7 @@ const CEOChat = (function () {
 
   const SUGGESTIONS = [
     'Resumen ejecutivo',
+    '¿Cómo vamos vs el business plan?',
     '¿Cuáles son los cuellos de botella?',
     '¿Qué plan de acción me propones?',
     '¿Qué está empeorando aunque esté en meta?',

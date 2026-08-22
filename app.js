@@ -472,6 +472,22 @@ function renderExecBand() {
     gEl.appendChild(el('span', { class: 'exec-h-counts muted',
       text: `${bad} críticos · ${warn} en riesgo · ${ew} alertas tempranas` }));
   }
+  // EBITDA como salud financiera del negocio (desde el business plan)
+  const eEl = document.getElementById('exec-ebitda');
+  const bpE = ((DATA.bp || {}).metricas || []).find(m => m.destacado);
+  if (eEl && bpE) {
+    clear(eEl);
+    const c = bpCumpl(bpE, 'ytd');
+    const st = statusFromScore(c);
+    eEl.appendChild(el('span', { class: 'exec-h-label', text: 'EBITDA · salud financiera' }));
+    const val = el('span', { class: 'exec-e-value' }, [
+      makeDot(st),
+      el('span', { class: 'exec-e-num', text: bpE.margen ? bpVal({ tipo: 'pct', ytd: bpE.margen.ytd }, 'ytd') : bpVal(bpE, 'ytd') })
+    ]);
+    eEl.appendChild(val);
+    eEl.appendChild(el('span', { class: 'exec-e-sub muted',
+      text: `${bpVal(bpE, 'ytd')} YTD · ${pct(c)} del plan · ${bpVsPy(bpE, 'ytd').texto} vs año ant.` }));
+  }
   // Chips por perspectiva
   const pWrap = document.getElementById('exec-persps');
   if (pWrap) {
@@ -485,6 +501,56 @@ function renderExecBand() {
       ]));
     });
   }
+}
+
+/* ============================ Business Plan (financiero) ============================ */
+// Venta, Facturación, Margen y EBITDA: mes y YTD vs plan, y vs año anterior.
+function renderBP() {
+  const host = document.getElementById('bp');
+  if (!host || !DATA.bp) return;
+  clear(host);
+  const nota = document.getElementById('bp-nota');
+  if (nota) nota.textContent = DATA.bp.nota;
+
+  DATA.bp.metricas.forEach(m => {
+    const cMes = bpCumpl(m, 'mes'), cYtd = bpCumpl(m, 'ytd');
+    const tile = el('article', { class: 'bp-tile' + (m.destacado ? ' is-star' : '') });
+
+    tile.appendChild(el('div', { class: 'bp-top' }, [
+      el('span', { class: 'bp-name', text: m.nombre }),
+      m.destacado ? el('span', { class: 'bp-star', text: '★ Salud financiera' }) : null
+    ]));
+
+    // Valor del mes en grande (+ margen EBITDA como subdato)
+    const val = el('p', { class: 'bp-value' }, [
+      el('span', { text: bpVal(m, 'mes') }),
+      el('span', { class: 'bp-per muted', text: ' mes' })
+    ]);
+    tile.appendChild(val);
+    if (m.margen) tile.appendChild(el('p', { class: 'bp-sub muted',
+      text: `margen ${bpVal({ tipo: 'pct', mes: m.margen.mes }, 'mes')} mes · ${bpVal({ tipo: 'pct', ytd: m.margen.ytd }, 'ytd')} YTD` }));
+
+    const rows = el('div', { class: 'bp-rows' });
+    const row = (lbl, right) => el('div', { class: 'bp-row' }, [
+      el('span', { class: 'bp-row-lbl muted', text: lbl }), right
+    ]);
+    rows.appendChild(row('Mes vs plan', el('span', { class: 'bp-row-val' }, [
+      makeDot(statusFromScore(cMes)),
+      el('span', { text: pctBP(cMes) }),
+      el('span', { class: 'muted bp-plan', text: 'plan ' + bpVal(m, 'mes', 'plan') })
+    ])));
+    rows.appendChild(row('YTD vs plan', el('span', { class: 'bp-row-val' }, [
+      makeDot(statusFromScore(cYtd)),
+      el('span', { text: pctBP(cYtd) }),
+      el('span', { class: 'muted bp-plan', text: bpVal(m, 'ytd') + ' / ' + bpVal(m, 'ytd', 'plan') })
+    ])));
+    const gMes = bpVsPy(m, 'mes'), gYtd = bpVsPy(m, 'ytd');
+    rows.appendChild(row('Mes vs año ant.', el('span', { class: 'bp-row-val ' + (gMes.up ? 'up' : 'down'), text: (gMes.up ? '▲ ' : '▼ ') + gMes.texto })));
+    rows.appendChild(row('YTD vs año ant.', el('span', { class: 'bp-row-val ' + (gYtd.up ? 'up' : 'down'), text: (gYtd.up ? '▲ ' : '▼ ') + gYtd.texto })));
+    tile.appendChild(rows);
+
+    host.appendChild(tile);
+  });
 }
 
 /* ============================ Alertas tempranas ============================ */
@@ -565,6 +631,7 @@ function renderPlanes() {
 /* ============================ Orquestación ============================ */
 function renderAll() {
   renderExecBand();
+  renderBP();
   renderDiagnostico();
   renderAlertas();
   renderPlanes();
