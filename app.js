@@ -86,6 +86,7 @@ function renderBullet(container, k) {
 /* ============================ Pulso ejecutivo ============================ */
 function renderPulso() {
   const wrap = document.getElementById('pulso');
+  if (!wrap) return;
   clear(wrap);
   DATA.destacados.forEach(id => {
     const k = kpi(id);
@@ -110,6 +111,7 @@ function renderPulso() {
 /* ============================ Mapa estratégico ============================ */
 function renderStrategyMap() {
   const host = document.getElementById('smap');
+  if (!host) return;
   clear(host);
 
   const W = 760, padX = 18, titleH = 30, pillH = 30, rowGap = 12, bandGap = 24, pillGapX = 10;
@@ -255,6 +257,7 @@ function matrixAreas() {
 
 function renderMatrix() {
   const host = document.getElementById('matrix');
+  if (!host) return;
   clear(host);
   const areas = matrixAreas();
   const persps = DATA.perspectivas;
@@ -349,6 +352,7 @@ function kpiRow(k) {
 /* ============================ Brechas y cadenas ============================ */
 function renderBrechas() {
   const host = document.getElementById('brechas');
+  if (!host) return;
   clear(host);
   const bneckSet = new Set(bottlenecks(2));
   const brechas = topBrechas(6, STATE.filtro);

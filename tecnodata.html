@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tecnodata S.A. · Vista simplificada</title>
+  <meta name="description" content="Versión simplificada del tablero de Tecnodata S.A.: indicadores financieros vs business plan y chat de diagnóstico. Datos ficticios.">
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page-simple">
+  <!-- ================= MAIN ================= -->
+  <main class="main">
+    <header class="topbar">
+      <div class="simple-brand">
+        <img src="assets/logo.png" alt="Tecnodata S.A." class="simple-logo">
+        <div>
+          <p class="eyebrow">Tecnodata S.A. · Gerencia País</p>
+          <h1>Vista simplificada</h1>
+          <p class="period muted" id="periodo"></p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <a class="btn" href="index.html">Ver tablero completo</a>
+        <div class="avatar" title="CEO">CEO</div>
+      </div>
+    </header>
+
+    <!-- ===== Indicadores financieros vs Business Plan ===== -->
+    <section class="card bp-card" aria-label="Venta, facturación, margen y EBITDA vs business plan">
+      <div class="card-head">
+        <div>
+          <h2>💰 Venta y resultado vs Business Plan</h2>
+          <span class="muted">Mes actual · acumulado YTD · comparación con el año anterior</span>
+        </div>
+        <span class="muted bp-nota" id="bp-nota"></span>
+      </div>
+      <div class="bp-grid" id="bp"><!-- JS --></div>
+    </section>
+
+    <!-- ===== CHAT: Pregúntale a tus datos ===== -->
+    <section class="card chat-card" aria-label="Chat de diagnóstico">
+      <div class="card-head chat-head">
+        <div>
+          <h2>💬 Pregúntale a tus datos</h2>
+          <span class="muted">Diagnóstico de cuellos de botella y oportunidades de mejora</span>
+        </div>
+      </div>
+      <div class="chat-log" id="chat-log" aria-live="polite"><!-- conversación (JS) --></div>
+      <div class="chat-suggest" id="chat-suggest"><!-- sugerencias (JS) --></div>
+      <form class="chat-input" id="chat-form" autocomplete="off">
+        <input id="chat-text" type="text" placeholder="Escribe tu pregunta…  p. ej. ¿Cómo vamos vs el business plan?" aria-label="Tu pregunta">
+        <button type="submit" class="btn btn-primary">Preguntar</button>
+      </form>
+    </section>
+
+    <footer class="footer">
+      <span>© <span id="year"></span> Tecnodata S.A. — Vista simplificada</span>
+      <span class="muted">Balanced Scorecard · datos ficticios de demostración</span>
+    </footer>
+  </main>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+  <script src="chat.js"></script>
+</body>
+</html>
