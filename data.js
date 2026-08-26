@@ -252,7 +252,7 @@ const DATA = {
   ------------------------------------------------------------------------- */
   bp: {
     moneda: 'MM$',
-    nota: 'Business plan anual aprobado por el directorio · cifras ficticias',
+    nota: 'Business plan anual aprobado por el directorio',
     metricas: [
       { id: 'bp_venta', nombre: 'Venta (cierre de negocios)', tipo: 'money',
         mes: { actual: 1150, plan: 1320, py: 1190 },
