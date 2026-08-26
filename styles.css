@@ -594,3 +594,17 @@ body {
   .chat-input { flex-direction: column; }
   .chat-input .btn { width: 100%; }
 }
+
+/* ===================== VISTA SIMPLIFICADA (tecnodata.html) ===================== */
+/* Sin sidebar: una sola columna, contenido centrado y acotado en ancho. */
+body.page-simple { grid-template-columns: 1fr; }
+.page-simple .main { width: 100%; max-width: 1180px; margin: 0 auto; }
+
+.simple-brand { display: flex; align-items: center; gap: 18px; }
+.simple-logo { width: 150px; height: auto; display: block; }
+.page-simple .topbar-actions .btn { text-decoration: none; display: inline-block; }
+
+@media (max-width: 560px) {
+  .simple-brand { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .simple-logo { width: 120px; }
+}

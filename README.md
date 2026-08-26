@@ -67,6 +67,7 @@ Tema **oscuro**, en línea con la marca Tecnodata S.A.
 
 ```
 index.html                    Vista CEO (banda ejecutiva, alertas, chat, planes) + análisis detallado
+tecnodata.html                Vista simplificada: indicadores financieros vs business plan + chat
 styles.css                    Estilos, tokens de marca y semáforo, responsive
 data.js                       DATA (KPIs, grafo de impacto, fuentes, planes) + helpers  ← EDITAR AQUÍ
 app.js                        Render de banda ejecutiva, alertas, planes, mapa, matriz y brechas
