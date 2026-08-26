@@ -649,7 +649,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const yearEl = document.getElementById('year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
   const periodEl = document.getElementById('periodo');
-  if (periodEl) periodEl.textContent = DATA.meta.periodo + ' · datos ficticios';
+  if (periodEl) periodEl.textContent = DATA.meta.periodo;
 
   buildSidebarFilter();
   // Al cargar: visión 360° completa (todas las cadenas encendidas + cuello de
